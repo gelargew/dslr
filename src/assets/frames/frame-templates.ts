@@ -33,31 +33,6 @@ export interface FrameStyleConfig {
 
 export const frameTemplates: FrameTemplate[] = [
   {
-    id: 'none',
-    name: 'No Frame',
-    category: 'basic',
-    previewImage: '/assets/frames/previews/no-frame.png',
-    cssClass: 'frame-none',
-    style: {
-      borderWidth: 0,
-      borderColor: 'transparent',
-      useFrameImage: false,
-      textSettings: {
-        enabled: false,
-        position: { x: 540, y: 900 },
-        fontSize: 0,
-        fontFamily: 'Tomorrow',
-        color: 'transparent',
-        align: 'center',
-        editable: {
-          position: false,
-          color: false,
-          size: false,
-        },
-      },
-    },
-  },
-  {
     id: 'spotify',
     name: 'Spotify Style',
     category: 'social',
@@ -73,7 +48,7 @@ export const frameTemplates: FrameTemplate[] = [
         position: { x: 24, y: 680 }, // Bottom center area of Spotify frame (square)
         maxWidth: 700,
 
-        fontSize: 24,
+        fontSize: 32,
         fontFamily: 'Geist',
         color: '#ffffff',
         padding: 12,
@@ -99,9 +74,9 @@ export const frameTemplates: FrameTemplate[] = [
       useFrameImage: true,
       textSettings: {
         enabled: true,
-        position: { x: 16, y: 940 }, // Bottom area of Instagram frame (square)
+        position: { x: 16, y: 945 }, // Bottom area of Instagram frame (square)
         maxWidth: 700,
-        fontSize: 26,
+        fontSize: 28,
         fontFamily: 'Geist',
         color: '#262626',
         padding: 15,
@@ -110,6 +85,31 @@ export const frameTemplates: FrameTemplate[] = [
           position: true,
           color: true,
           size: true,
+        },
+      },
+    },
+  },
+  {
+    id: 'none',
+    name: 'No Frame',
+    category: 'basic',
+    previewImage: '/assets/frames/previews/no-frame.png',
+    cssClass: 'frame-none',
+    style: {
+      borderWidth: 0,
+      borderColor: 'transparent',
+      useFrameImage: false,
+      textSettings: {
+        enabled: false,
+        position: { x: 540, y: 900 },
+        fontSize: 0,
+        fontFamily: 'Tomorrow',
+        color: 'transparent',
+        align: 'center',
+        editable: {
+          position: false,
+          color: false,
+          size: false,
         },
       },
     },

@@ -12,12 +12,10 @@ export default function PreviewPage() {
   };
 
   const handleFinish = () => {
-    navigate({ to: "/thank-you" });
-  };
-
-  const handleEdit = () => {
     navigate({ to: "/edit" });
   };
+
+
 
   if (isLoading) {
     return (
@@ -45,74 +43,31 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-black">
-      {/* Photo Display - Square */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="relative aspect-square w-full max-w-lg">
-          <img
-            src={currentPhoto.file_path}
-            alt="Captured photo"
-            className="w-full h-full object-cover rounded-lg shadow-2xl"
-          />
+    <div className="relative h-screen w-full">
+      {/* Fullscreen Photo Background */}
+      <img
+        src={currentPhoto.file_path}
+        alt="Captured photo"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-          {/* Photo border effect */}
-          <div className="absolute inset-0 rounded-lg ring-4 ring-white/20 pointer-events-none" />
-        </div>
-      </div>
+      {/* Two Buttons at Bottom */}
+      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex gap-[42px] items-center">
+        {/* Finish Button (Blue) */}
+        <button
+          onClick={handleFinish}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[28px] leading-[54px] px-20 py-4 rounded-[32px] shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+        >
+          Finish
+        </button>
 
-      {/* Controls Panel */}
-      <div className="w-80 bg-gray-900 flex flex-col justify-center p-8 space-y-6">
-        <div className="text-center text-white mb-8">
-          <h2 className="text-3xl font-bold mb-2">How does it look?</h2>
-          <p className="text-gray-300">Choose what you'd like to do next</p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-4">
-          <Button
-            onClick={handleEdit}
-            size="lg"
-            className="w-full h-16 text-lg bg-blue-600 hover:bg-blue-700"
-          >
-            ✨ Edit & Add Effects
-          </Button>
-
-          <Button
-            onClick={handleFinish}
-            size="lg"
-            variant="outline"
-            className="w-full h-16 text-lg border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-          >
-            ✅ Finish & Save
-          </Button>
-
-          <Button
-            onClick={handleRetake}
-            size="lg"
-            variant="outline"
-            className="w-full h-16 text-lg border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
-          >
-            📷 Retake Photo
-          </Button>
-        </div>
-
-        {/* Photo Info */}
-        <div className="mt-8 pt-6 border-t border-gray-700 text-sm text-gray-400">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Resolution:</span>
-              <span>{currentPhoto.original_width} × {currentPhoto.original_height}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Size:</span>
-              <span>{(currentPhoto.file_size / (1024 * 1024)).toFixed(1)} MB</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Time:</span>
-              <span>{new Date(currentPhoto.created_at).toLocaleTimeString()}</span>
-            </div>
-          </div>
-        </div>
+        {/* Retake Button (Gray) */}
+        <button
+          onClick={handleRetake}
+          className="bg-[#585d68] opacity-70 hover:opacity-90 text-white font-semibold text-[28px] leading-[54px] px-20 py-4 rounded-[32px] shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+        >
+          Retake
+        </button>
       </div>
     </div>
   );

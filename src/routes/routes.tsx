@@ -16,7 +16,7 @@ import EditPhotoPage from "@/pages/EditPhotoPage";
 import EditOverlayPage from "@/pages/EditOverlayPage";
 import CompletePage from "@/pages/CompletePage";
 import DebugPage from "@/pages/DebugPage";
-// import GalleryPage from "@/pages/GalleryPage";
+import GalleryPage from "@/pages/GalleryPage";
 
 // Legacy routes (can be removed later)
 export const HomeRoute = createRoute({
@@ -38,10 +38,16 @@ export const DebugRoute = createRoute({
   component: DebugPage,
 });
 
-// Photobooth Routes
-export const WelcomeRoute = createRoute({
+// Photobooth Routes - HomePage is now the main welcome screen
+export const HomeMainRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "/",
+  component: HomePage,
+});
+
+export const WelcomeRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/welcome",
   component: WelcomePage,
 });
 
@@ -94,15 +100,16 @@ export const CompleteRoute = createRoute({
 });
 
 // Videotron Routes
-// export const GalleryRoute = createRoute({
-//   getParentRoute: () => RootRoute,
-//   path: "/gallery",
-//   component: GalleryPage,
-// });
+export const GalleryRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/gallery",
+  component: GalleryPage,
+});
 
 export const rootTree = RootRoute.addChildren([
   // Photobooth routes (main flow)
-  WelcomeRoute,
+  HomeMainRoute, // Main entry point
+  WelcomeRoute, // Alternative welcome page
   CameraRoute,
   CountdownRoute,
   PreviewRoute,
@@ -116,7 +123,7 @@ export const rootTree = RootRoute.addChildren([
   DebugRoute,
 
   // Videotron routes
-  // GalleryRoute,
+  GalleryRoute,
 
   // Legacy routes (for testing/development)
   HomeRoute,

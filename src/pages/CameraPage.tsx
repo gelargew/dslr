@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { usePhotoContext } from "@/contexts/PhotoContext";
+import { Camera } from "lucide-react";
 
 export default function CameraPage() {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ export default function CameraPage() {
       const imageData = canvas.toDataURL('image/jpeg', 0.9);
 
       // Save photo via context
-      const savedPhoto = await capturePhoto(imageData);
+      await capturePhoto(imageData);
 
       // Navigate to countdown page
       navigate({ to: "/countdown" });
@@ -148,63 +149,21 @@ export default function CameraPage() {
         className="hidden"
       />
 
-      {/* Square Capture Area Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative">
-          {/* Square frame guide */}
-          <div className="w-80 h-80 sm:w-96 sm:h-96 lg:w-[500px] lg:h-[500px] border-4 border-white/80 rounded-lg shadow-lg">
-            {/* Corner guides */}
-            <div className="absolute -top-2 -left-2 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-            <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
-          </div>
+      {/* Camera Button */}
+      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2">
+        <button
+          onClick={handleCapture}
+          disabled={isCapturing}
+          className="bg-[#585d68] opacity-80 hover:opacity-70 disabled:opacity-50 px-16 py-4 rounded-[120px] flex flex-col gap-2.5 items-center justify-center transition-opacity duration-200 shadow-2xl"
+        >
 
-          {/* Center guide dot */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full opacity-60"></div>
-        </div>
-      </div>
-
-      {/* Camera Controls Overlay */}
-      <div className="absolute inset-0 flex flex-col justify-between p-8 pointer-events-none">
-        {/* Top Bar */}
-        <div className="flex justify-between items-center pointer-events-auto">
-          <Button
-            onClick={handleBack}
-            variant="ghost"
-            size="lg"
-            className="text-white hover:bg-white/20"
-          >
-            ← Back
-          </Button>
-
-          <div className="text-white text-lg font-medium">
-            Position yourself in the square
-          </div>
-
-          <div className="w-24" /> {/* Spacer for centering */}
-        </div>
-
-        {/* Bottom Controls */}
-        <div className="flex justify-center items-center pointer-events-auto">
-          <Button
-            onClick={handleCapture}
-            disabled={isCapturing}
-            size="lg"
-            className="h-20 w-20 rounded-full bg-white text-black hover:bg-gray-200 disabled:opacity-50 shadow-lg"
-          >
             {isCapturing ? (
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-black" />
+              <Camera size={36} className="text-gray-700" />
             )}
-          </Button>
-        </div>
 
-        {/* Instructions */}
-        <div className="text-center text-white/80 pointer-events-none">
-          <p className="text-lg">Tap the circle to capture your square photo</p>
-        </div>
+        </button>
       </div>
     </div>
   );

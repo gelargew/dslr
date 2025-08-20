@@ -7,6 +7,9 @@ import { updateAppLanguage } from "./helpers/language_helpers";
 import { router } from "./routes/router";
 import { RouterProvider } from "@tanstack/react-router";
 
+// Import mock IPC for development
+import "./helpers/mock-ipc";
+
 export default function App() {
   const { i18n } = useTranslation();
 

@@ -1,0 +1,24 @@
+<!-- Placeholder SVG for Spotify-style frame -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <!-- Spotify green gradient background -->
+  <defs>
+    <linearGradient id="spotifyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1DB954;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#1AA34A;stop-opacity:0.9" />
+    </linearGradient>
+  </defs>
+
+  <!-- Bottom overlay area for Spotify-style player -->
+  <rect x="0" y="850" width="1920" height="230" fill="url(#spotifyGrad)" />
+
+  <!-- Spotify player bar simulation -->
+  <rect x="60" y="900" width="1800" height="80" fill="rgba(0,0,0,0.3)" rx="40" />
+
+  <!-- Play controls area -->
+  <circle cx="960" cy="940" r="25" fill="white" opacity="0.9" />
+  <path d="M950 930 L950 950 L970 940 Z" fill="#1DB954" />
+
+  <!-- Progress bar -->
+  <rect x="200" y="935" width="1520" height="10" fill="rgba(255,255,255,0.3)" rx="5" />
+  <rect x="200" y="935" width="760" height="10" fill="white" rx="5" />
+</svg>

@@ -12,13 +12,83 @@ interface ThemeModeContext {
   system: () => Promise<boolean>;
   current: () => Promise<"dark" | "light" | "system">;
 }
+
 interface ElectronWindow {
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
   close: () => Promise<void>;
 }
 
+// Text settings for custom positioning and styling
+interface TextSettings {
+  position: { x: number; y: number };
+  fontSize: number;
+  color: string;
+}
+
+// Photobooth types
+interface PhotoMetadata {
+  frameTemplateId?: string;
+  frameText?: string;
+  textSettings?: TextSettings;
+  overlays: any[];
+}
+
+interface GeneratedPhotoMetadata {
+  originalPhotoId: string;
+  frameTemplateId?: string;
+  frameText?: string;
+  textSettings?: TextSettings;
+  overlays: any[];
+}
+
+interface PhotoData {
+  id: string;
+  filename: string;
+  file_path: string;
+  thumbnail_path?: string;
+  original_width: number;
+  original_height: number;
+  file_size: number;
+  created_at: string;
+  updated_at: string;
+  is_edited: boolean;
+  is_deleted: boolean;
+}
+
+interface PhotoEditData {
+  photoId: string;
+  frameTemplateId?: string;
+  frameText?: string;
+  textSettings?: TextSettings;
+  overlays: any[];
+}
+
+interface CameraDevice {
+  id: string;
+  label: string;
+  kind: 'videoinput';
+}
+
+interface StorageAPI {
+  savePhoto(photoData: string, metadata: PhotoMetadata): Promise<PhotoData>;
+  savePhotoEdit(editData: PhotoEditData): Promise<any>;
+  saveGeneratedPhoto(photoData: string, metadata: GeneratedPhotoMetadata): Promise<PhotoData>;
+  getPhotos(): Promise<PhotoData[]>;
+  deletePhoto(photoId: string): Promise<void>;
+  getStoragePath(): Promise<string>;
+  addToDisplayQueue(photoId: string): Promise<void>;
+}
+
+interface CameraAPI {
+  getDevices(): Promise<CameraDevice[]>;
+  getPermissions(): Promise<boolean>;
+  capturePhoto(deviceId?: string): Promise<string>;
+}
+
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
+  storageAPI: StorageAPI;
+  cameraAPI: CameraAPI;
 }

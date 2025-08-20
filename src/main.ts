@@ -13,19 +13,30 @@ const inDevelopment = process.env.NODE_ENV === "development";
 function createWindow() {
   const preload = path.join(__dirname, "preload.js");
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200, // Make wider for debug
+    height: 800,
     webPreferences: {
-      devTools: inDevelopment,
+      devTools: true, // Force enable dev tools
       contextIsolation: true,
       nodeIntegration: true,
       nodeIntegrationInSubFrames: false,
-
       preload: preload,
     },
     titleBarStyle: "hidden",
   });
   registerListeners(mainWindow);
+
+  // Auto-open dev tools in development
+  if (inDevelopment) {
+    mainWindow.webContents.openDevTools();
+  }
+
+  // Add keyboard shortcut to toggle dev tools
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -33,6 +44,12 @@ function createWindow() {
     mainWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
+  }
+
+  // Debug logging for development
+  if (inDevelopment) {
+    console.log('Electron main process started');
+    console.log('Dev tools enabled');
   }
 }
 

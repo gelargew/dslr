@@ -1,0 +1,249 @@
+---
+globs: src/routes/*,src/pages/*
+description: Routing and page structure for photobooth application
+---
+
+# Photobooth Routing & Page Structure
+
+## Route Structure
+
+Based on [TanStack Router](mdc:src/routes/router.tsx) patterns, create these routes:
+
+### Core Photobooth Routes
+```typescript
+// src/routes/photobooth.routes.tsx
+export const WelcomeRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/",
+  component: WelcomePage,
+});
+
+export const CameraRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/camera",
+  component: CameraPage,
+});
+
+export const CountdownRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/countdown",
+  component: CountdownPage,
+});
+
+export const PreviewRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/preview",
+  component: PreviewPage,
+});
+
+export const ThankYouRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/thank-you",
+  component: ThankYouPage,
+});
+
+export const EditLandingRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/edit",
+  component: EditLandingPage,
+});
+
+export const EditPhotoRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/edit/photo",
+  component: EditPhotoPage,
+});
+
+export const EditOverlayRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/edit/overlay",
+  component: EditOverlayPage,
+});
+
+export const CompleteRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/complete",
+  component: CompletePage,
+});
+```
+
+### Videotron Routes (Same App, Different Route)
+```typescript
+// src/routes/videotron.routes.tsx
+export const GalleryRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/gallery",
+  component: GalleryPage,
+});
+
+// Gallery page uses minimal layout (no navigation chrome)
+export const GalleryLayoutRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/gallery",
+  component: () => (
+    <div className="h-screen w-full bg-black">
+      <GalleryPage />
+    </div>
+  ),
+});
+```
+
+## Page Component Structure
+
+### Page Template Pattern
+```typescript
+// src/pages/[PageName].tsx
+import React from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+
+export default function PageName() {
+  const navigate = useNavigate();
+
+  const handleNext = () => {
+    navigate({ to: "/next-route" });
+  };
+
+  return (
+    <div className="flex h-screen w-full flex-col">
+      {/* Page content */}
+    </div>
+  );
+}
+```
+
+### Layout Patterns
+
+#### Fullscreen Layout (No BaseLayout)
+```typescript
+// For photobooth pages - fullscreen experience
+export default function CameraPage() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-black">
+      {/* Fullscreen content */}
+    </div>
+  );
+}
+```
+
+#### Two-Column Layout (Edit Pages)
+```typescript
+// For edit pages with photo preview + editor
+export default function EditPhotoPage() {
+  return (
+    <div className="flex h-screen w-full">
+      <div className="flex-1 p-4">
+        {/* Left: Photo preview */}
+      </div>
+      <div className="flex-1 p-4">
+        {/* Right: Editor interface */}
+      </div>
+    </div>
+  );
+}
+```
+
+## Page-Specific Guidelines
+
+### 1. Welcome Page (`src/pages/WelcomePage.tsx`)
+- Remove [NavigationMenu](mdc:src/components/template/NavigationMenu.tsx)
+- Large, centered "Start" button
+- Minimal, clean design
+
+### 2. Camera Page (`src/pages/CameraPage.tsx`)
+- Fullscreen video element for webcam feed
+- Fixed position capture button (bottom center)
+- Access camera via Electron IPC
+
+### 3. Countdown Page (`src/pages/CountdownPage.tsx`)
+- Display countdown timer (3, 2, 1)
+- Auto-navigate to preview after countdown
+- Smooth animations
+
+### 4. Preview Page (`src/pages/PreviewPage.tsx`)
+- Show captured photo fullscreen
+- "Finish" and "Retake" buttons
+- Handle photo saving
+
+### 5. Thank You Page (`src/pages/ThankYouPage.tsx`)
+- "Your moment is saved" message
+- 10-second countdown timer
+- Auto-redirect to welcome
+
+### 6. Edit Landing (`src/pages/EditLandingPage.tsx`)
+- Entry point for editing workflow
+- "Start Edit" button
+
+### 7. Edit Photo Page (`src/pages/EditPhotoPage.tsx`)
+- Two-column: photo preview + text editor
+- Template selector for frames
+- Text input for frame customization
+
+### 8. Edit Overlay Page (`src/pages/EditOverlayPage.tsx`)
+- Two-column: photo with frame + icon selector
+- Drag-and-drop icon placement
+- "Back" and "Finish" actions
+
+### 9. Complete Page (`src/pages/CompletePage.tsx`)
+- Final thank you message
+- 10-second countdown to welcome
+
+### 10. Gallery Page (`src/pages/GalleryPage.tsx`)
+- Videotron 4-row grid layout
+- Infinite scrolling animation
+- New photo animation overlay
+- Fullscreen layout (no BaseLayout)
+- Auto-refresh for new photos every 30 seconds
+
+## Navigation Patterns
+
+### Auto-Navigation with Timers
+```typescript
+// Use in thank you pages and countdown
+const useAutoNavigate = (targetRoute: string, delay: number) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate({ to: targetRoute });
+    }, delay * 1000);
+
+    return () => clearTimeout(timer);
+  }, [navigate, targetRoute, delay]);
+};
+```
+
+### Route Guards
+```typescript
+// Ensure photo data exists before allowing certain routes
+const usePhotoGuard = () => {
+  const navigate = useNavigate();
+  const hasPhoto = /* check photo state */;
+
+  useEffect(() => {
+    if (!hasPhoto) {
+      navigate({ to: "/" });
+    }
+  }, [hasPhoto, navigate]);
+};
+```
+
+## Route Tree Updates
+
+Update [routes.tsx](mdc:src/routes/routes.tsx) to include all photobooth routes:
+
+```typescript
+export const rootTree = RootRoute.addChildren([
+  WelcomeRoute,
+  CameraRoute,
+  CountdownRoute,
+  PreviewRoute,
+  ThankYouRoute,
+  EditLandingRoute,
+  EditPhotoRoute,
+  EditOverlayRoute,
+  CompleteRoute,
+  // Videotron route (separate app)
+  GalleryRoute,
+]);
+```

@@ -1,0 +1,129 @@
+---
+alwaysApply: true
+description: Main architecture guide for the Photobooth application
+---
+
+# Photobooth Application Architecture
+
+This is a **dual-application system** with:
+
+1. **Photobooth App** - Main interactive photo capture and editing application
+2. **Videotron App** - Display gallery for showing captured photos
+
+## Application Structure
+
+### Technology Stack
+- **Electron** with [forge.config.ts](mdc:forge.config.ts) configuration
+- **React 19** with TypeScript
+- **Vite** for bundling (main, preload, renderer configs)
+- **TanStack Router** for routing ([router.tsx](mdc:src/routes/router.tsx))
+- **shadcn/ui** components with Tailwind CSS
+- **i18next** for internationalization
+- **Vitest + Playwright** for testing
+
+### Project Structure
+- `src/components/` - Reusable UI components and shadcn/ui components
+- `src/pages/` - Page components for different routes
+- `src/layouts/` - Layout wrapper components like [BaseLayout.tsx](mdc:src/layouts/BaseLayout.tsx)
+- `src/routes/` - TanStack Router configuration
+- `src/helpers/` - Utility functions and IPC helpers
+- `src/styles/` - Global CSS and Tailwind configuration
+- `src/localization/` - i18n configuration and translations
+
+## Photobooth App Flow
+
+### 1. Welcome/Landing Page (`/`)
+- Clean landing interface with large "Start" button
+- Remove existing navigation menu for photobooth mode
+- Fullscreen experience optimized for touch interaction
+
+### 2. Webcam View (`/camera`)
+- Fullscreen webcam feed using `getUserMedia` API
+- Fixed position capture button (bottom center)
+- Access webcam through Electron's main process for permissions
+
+### 3. Countdown Page (`/countdown`)
+- 3-second countdown overlay in center of screen
+- Use countdown timer hook/component
+- Auto-redirect to capture after countdown
+
+### 4. Preview Page (`/preview`)
+- Display captured photo fullscreen
+- Two action buttons: "Finish" and "Retake"
+- Save photo to local storage/filesystem
+
+### 5. Thank You Page (`/thank-you`)
+- "Your moment is saved" message
+- 10-second countdown to return to landing
+- Auto-redirect to welcome page
+
+### 6. Edit Landing (`/edit`)
+- Entry point for editing flow
+- "Thank you" message and "Start Edit" button
+
+### 7. Edit Page (`/edit/photo`)
+- Two-column layout:
+  - Left: Captured photo preview
+  - Right: Text editor and template selector
+- Frame templates (Instagram-style frames with titles)
+- Text input for custom frame text
+- "Next" button to proceed
+
+### 8. Overlay Page (`/edit/overlay`)
+- Two-column layout:
+  - Left: Photo with selected frame
+  - Right: Icon selector (stars, hearts, etc.)
+- Drag-and-drop icons onto photo
+- "Back" and "Finish" buttons
+
+### 9. Final Thank You (`/complete`)
+- Final thank you message
+- 10-second countdown to return to landing
+
+## Videotron App
+
+### Gallery View (`/gallery` - separate app)
+- 4-row grid gallery (max 40 items)
+- Infinite horizontal scrolling:
+  - Rows 1,3: scroll left
+  - Rows 2,4: scroll right
+- New photo animation: 5-second center display, then fade to grid
+
+## Key Implementation Guidelines
+
+### Routing
+- Use [TanStack Router](mdc:src/routes/router.tsx) with memory history
+- Follow existing route pattern in [routes.tsx](mdc:src/routes/routes.tsx)
+- Remove navigation menu for photobooth app (create minimal layout)
+
+### Components
+- Extend existing [shadcn/ui components](mdc:src/components/ui/)
+- Use [Button component](mdc:src/components/ui/button.tsx) for all actions
+- Create fullscreen layouts without [BaseLayout](mdc:src/layouts/BaseLayout.tsx) chrome
+
+### Styling
+- Follow [Tailwind CSS patterns](mdc:src/styles/global.css)
+- Use CSS custom properties for theming
+- Implement touch-friendly UI (large buttons, proper spacing)
+
+### State Management
+- Use React state and context for photo data
+- Implement local file storage for captured photos
+- Share data between photobooth and videotron apps via shared storage
+
+### Electron Integration
+- Extend [IPC helpers](mdc:src/helpers/ipc/) for camera access
+- Add new IPC channels for file operations
+- Use [context-exposer.ts](mdc:src/helpers/ipc/context-exposer.ts) pattern
+
+### File Organization
+- Create photo-specific components in `src/components/photobooth/`
+- Create videotron components in `src/components/videotron/`
+- Add camera utilities in `src/helpers/camera/`
+- Store captured photos in dedicated directory
+
+### Development Approach
+- Build incrementally, page by page
+- Test webcam functionality early
+- Ensure smooth transitions between pages
+- Optimize for fullscreen, kiosk-style operation

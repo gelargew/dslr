@@ -1,0 +1,559 @@
+---
+globs: src/helpers/database/*,src/contexts/*,src/hooks/*
+description: Database schema, data management, and state patterns for photobooth application
+---
+
+# Photobooth Database & Data Management
+
+## Database Schema
+
+### SQLite Tables
+```sql
+-- Photos table - main photo records
+CREATE TABLE photos (
+  id TEXT PRIMARY KEY,
+  filename TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  thumbnail_path TEXT,
+  original_width INTEGER,
+  original_height INTEGER,
+  file_size INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  is_edited BOOLEAN DEFAULT FALSE,
+  is_deleted BOOLEAN DEFAULT FALSE
+);
+
+-- Photo edits - track editing history
+CREATE TABLE photo_edits (
+  id TEXT PRIMARY KEY,
+  photo_id TEXT REFERENCES photos(id),
+  frame_template_id TEXT,
+  frame_text TEXT,
+  overlay_data TEXT, -- JSON array of overlays
+  edit_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  is_current BOOLEAN DEFAULT TRUE
+);
+
+-- Note: Frame templates and overlay icons are stored as local assets, not in database
+
+-- App settings - configuration storage
+CREATE TABLE app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Photo display queue - for videotron
+CREATE TABLE display_queue (
+  id TEXT PRIMARY KEY,
+  photo_id TEXT REFERENCES photos(id),
+  queue_position INTEGER,
+  display_duration INTEGER DEFAULT 5000,
+  is_displayed BOOLEAN DEFAULT FALSE,
+  queued_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Data Access Layer
+
+### Database Service (`src/helpers/database/database-service.ts`)
+```typescript
+export class DatabaseService {
+  private db: Database.Database;
+
+  constructor(dbPath: string) {
+    this.db = new Database(dbPath);
+    this.initializeDatabase();
+  }
+
+  // Photo operations
+  async savePhoto(photoData: CreatePhotoData): Promise<PhotoRecord> {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    const stmt = this.db.prepare(`
+      INSERT INTO photos (id, filename, file_path, original_width, original_height, file_size, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(id, photoData.filename, photoData.filePath, photoData.width, photoData.height, photoData.fileSize, now);
+
+    return this.getPhotoById(id)!;
+  }
+
+  getRecentPhotos(limit: number = 40): PhotoRecord[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM photos
+      WHERE is_deleted = FALSE
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    return stmt.all(limit) as PhotoRecord[];
+  }
+
+  getPhotoById(id: string): PhotoRecord | null {
+    const stmt = this.db.prepare('SELECT * FROM photos WHERE id = ? AND is_deleted = FALSE');
+    return stmt.get(id) as PhotoRecord | null;
+  }
+
+  // Photo editing operations
+  savePhotoEdit(editData: CreatePhotoEditData): PhotoEditRecord {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    // Mark previous edits as not current
+    this.db.prepare('UPDATE photo_edits SET is_current = FALSE WHERE photo_id = ?')
+      .run(editData.photoId);
+
+    // Insert new edit
+    const stmt = this.db.prepare(`
+      INSERT INTO photo_edits (id, photo_id, frame_template_id, frame_text, overlay_data, edit_timestamp)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(id, editData.photoId, editData.frameTemplateId, editData.frameText,
+             JSON.stringify(editData.overlays), now);
+
+    // Mark photo as edited
+    this.db.prepare('UPDATE photos SET is_edited = TRUE, updated_at = ? WHERE id = ?')
+      .run(now, editData.photoId);
+
+    return this.getPhotoEditById(id)!;
+  }
+
+  getCurrentPhotoEdit(photoId: string): PhotoEditRecord | null {
+    const stmt = this.db.prepare(`
+      SELECT * FROM photo_edits
+      WHERE photo_id = ? AND is_current = TRUE
+    `);
+    return stmt.get(photoId) as PhotoEditRecord | null;
+  }
+
+    // Note: Frame templates and overlay icons are loaded from local assets, not database
+
+  // Display queue for videotron
+  addToDisplayQueue(photoId: string, duration: number = 5000): void {
+    const id = generateId();
+    const maxPosition = this.db.prepare('SELECT MAX(queue_position) as max_pos FROM display_queue').get() as { max_pos: number };
+    const position = (maxPosition?.max_pos || 0) + 1;
+
+    const stmt = this.db.prepare(`
+      INSERT INTO display_queue (id, photo_id, queue_position, display_duration)
+      VALUES (?, ?, ?, ?)
+    `);
+    stmt.run(id, photoId, position, duration);
+  }
+
+  getDisplayQueue(limit: number = 10): DisplayQueueItem[] {
+    const stmt = this.db.prepare(`
+      SELECT dq.*, p.file_path, p.filename
+      FROM display_queue dq
+      JOIN photos p ON dq.photo_id = p.id
+      WHERE dq.is_displayed = FALSE
+      ORDER BY dq.queue_position ASC
+      LIMIT ?
+    `);
+    return stmt.all(limit) as DisplayQueueItem[];
+  }
+
+  markAsDisplayed(queueId: string): void {
+    this.db.prepare('UPDATE display_queue SET is_displayed = TRUE WHERE id = ?').run(queueId);
+  }
+}
+```
+
+## Type Definitions
+
+### Core Data Types (`src/types/database.ts`)
+```typescript
+// Photo records
+export interface PhotoRecord {
+  id: string;
+  filename: string;
+  file_path: string;
+  thumbnail_path?: string;
+  original_width: number;
+  original_height: number;
+  file_size: number;
+  created_at: string;
+  updated_at: string;
+  is_edited: boolean;
+  is_deleted: boolean;
+}
+
+export interface CreatePhotoData {
+  filename: string;
+  filePath: string;
+  width: number;
+  height: number;
+  fileSize: number;
+}
+
+// Photo edit records
+export interface PhotoEditRecord {
+  id: string;
+  photo_id: string;
+  frame_template_id?: string;
+  frame_text?: string;
+  overlay_data: string; // JSON string
+  edit_timestamp: string;
+  is_current: boolean;
+}
+
+export interface CreatePhotoEditData {
+  photoId: string;
+  frameTemplateId?: string;
+  frameText?: string;
+  overlays: IconOverlay[];
+}
+
+// Frame templates (local assets)
+export interface FrameTemplate {
+  id: string;
+  name: string;
+  category: string;
+  previewImage: string; // path to preview image
+  cssClass: string; // CSS class name for styling
+  style: FrameStyleConfig;
+}
+
+export interface FrameStyleConfig {
+  borderWidth: number;
+  borderColor: string;
+  backgroundColor?: string;
+  titlePosition: 'top' | 'bottom' | 'overlay';
+  titleStyle: {
+    fontSize: number;
+    fontFamily: string;
+    color: string;
+    background?: string;
+  };
+}
+
+// Overlay icons (local assets)
+export interface OverlayIcon {
+  id: string;
+  name: string;
+  category: string;
+  iconPath: string; // path to icon file
+  iconType: 'svg' | 'png' | 'jpg';
+  defaultSize: number;
+}
+
+export interface IconOverlay {
+  id: string;
+  iconId: string;
+  position: { x: number; y: number };
+  size: number;
+  rotation: number;
+  zIndex: number;
+}
+
+// Display queue
+export interface DisplayQueueItem {
+  id: string;
+  photo_id: string;
+  queue_position: number;
+  display_duration: number;
+  is_displayed: boolean;
+  queued_at: string;
+  file_path: string;
+  filename: string;
+}
+```
+
+## React Context Providers
+
+### Photo Context (`src/contexts/PhotoContext.tsx`)
+```typescript
+interface PhotoContextType {
+  // Current session data
+  currentPhoto: PhotoRecord | null;
+  currentEdit: PhotoEditRecord | null;
+  capturedPhotos: PhotoRecord[];
+
+  // Actions
+  capturePhoto: (imageData: string) => Promise<PhotoRecord>;
+  savePhotoEdit: (editData: CreatePhotoEditData) => Promise<PhotoEditRecord>;
+  loadRecentPhotos: () => Promise<PhotoRecord[]>;
+  deletePhoto: (photoId: string) => Promise<void>;
+
+  // Loading states
+  isCapturing: boolean;
+  isSaving: boolean;
+  isLoading: boolean;
+}
+
+export const PhotoContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, setState] = useState<PhotoContextState>({
+    currentPhoto: null,
+    currentEdit: null,
+    capturedPhotos: [],
+    isCapturing: false,
+    isSaving: false,
+    isLoading: false,
+  });
+
+  const capturePhoto = async (imageData: string): Promise<PhotoRecord> => {
+    setState(prev => ({ ...prev, isCapturing: true }));
+
+    try {
+      // Save image data via IPC
+      const savedPhoto = await window.storageAPI.savePhoto(imageData, {});
+
+      setState(prev => ({
+        ...prev,
+        currentPhoto: savedPhoto,
+        capturedPhotos: [savedPhoto, ...prev.capturedPhotos],
+        isCapturing: false,
+      }));
+
+      return savedPhoto;
+    } catch (error) {
+      setState(prev => ({ ...prev, isCapturing: false }));
+      throw error;
+    }
+  };
+
+  const savePhotoEdit = async (editData: CreatePhotoEditData): Promise<PhotoEditRecord> => {
+    setState(prev => ({ ...prev, isSaving: true }));
+
+    try {
+      const savedEdit = await window.storageAPI.savePhotoEdit(editData);
+
+      setState(prev => ({
+        ...prev,
+        currentEdit: savedEdit,
+        isSaving: false,
+      }));
+
+      // Add to display queue for videotron
+      await window.storageAPI.addToDisplayQueue(editData.photoId);
+
+      return savedEdit;
+    } catch (error) {
+      setState(prev => ({ ...prev, isSaving: false }));
+      throw error;
+    }
+  };
+
+  return (
+    <PhotoContext.Provider value={{ ...state, capturePhoto, savePhotoEdit, loadRecentPhotos, deletePhoto }}>
+      {children}
+    </PhotoContext.Provider>
+  );
+};
+```
+
+### Gallery Context (`src/contexts/GalleryContext.tsx`)
+```typescript
+interface GalleryContextType {
+  photos: PhotoRecord[];
+  displayQueue: DisplayQueueItem[];
+  currentDisplayPhoto: PhotoRecord | null;
+
+  loadGalleryPhotos: () => Promise<void>;
+  processDisplayQueue: () => Promise<void>;
+  markPhotoDisplayed: (queueId: string) => Promise<void>;
+
+  isLoading: boolean;
+}
+
+export const GalleryContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Implementation for videotron gallery state management
+  // Auto-refresh every 30 seconds for new photos
+  // Handle display queue processing
+};
+```
+
+## Custom Hooks
+
+### Photo Management Hooks (`src/hooks/usePhotoManager.ts`)
+```typescript
+export function usePhotoManager() {
+  const context = useContext(PhotoContext);
+  if (!context) {
+    throw new Error('usePhotoManager must be used within PhotoContextProvider');
+  }
+  return context;
+}
+
+export function usePhotoCapture() {
+  const { capturePhoto, isCapturing, currentPhoto } = usePhotoManager();
+
+  const capture = useCallback(async () => {
+    try {
+      const imageData = await window.cameraAPI.capturePhoto();
+      return await capturePhoto(imageData);
+    } catch (error) {
+      console.error('Photo capture failed:', error);
+      throw error;
+    }
+  }, [capturePhoto]);
+
+  return { capture, isCapturing, currentPhoto };
+}
+
+export function usePhotoEditor() {
+  const { savePhotoEdit, currentEdit, isSaving } = usePhotoManager();
+  const [selectedFrame, setSelectedFrame] = useState<string>();
+  const [frameText, setFrameText] = useState<string>('');
+  const [overlays, setOverlays] = useState<IconOverlay[]>([]);
+
+  const saveEdit = useCallback(async (photoId: string) => {
+    return await savePhotoEdit({
+      photoId,
+      frameTemplateId: selectedFrame,
+      frameText,
+      overlays,
+    });
+  }, [savePhotoEdit, selectedFrame, frameText, overlays]);
+
+  return {
+    selectedFrame,
+    setSelectedFrame,
+    frameText,
+    setFrameText,
+    overlays,
+    setOverlays,
+    saveEdit,
+    currentEdit,
+    isSaving,
+  };
+}
+```
+
+### Gallery Hooks (`src/hooks/useGallery.ts`)
+```typescript
+export function useGalleryManager() {
+  const context = useContext(GalleryContext);
+  if (!context) {
+    throw new Error('useGalleryManager must be used within GalleryContextProvider');
+  }
+  return context;
+}
+
+export function useAutoRefresh(interval: number = 30000) {
+  const { loadGalleryPhotos } = useGalleryManager();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadGalleryPhotos();
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [loadGalleryPhotos, interval]);
+}
+
+export function useDisplayQueue() {
+  const { displayQueue, processDisplayQueue, markPhotoDisplayed } = useGalleryManager();
+
+  const processNext = useCallback(async () => {
+    const nextItem = displayQueue[0];
+    if (nextItem) {
+      await processDisplayQueue();
+      setTimeout(() => {
+        markPhotoDisplayed(nextItem.id);
+      }, nextItem.display_duration);
+    }
+  }, [displayQueue, processDisplayQueue, markPhotoDisplayed]);
+
+  return { displayQueue, processNext };
+}
+```
+
+## Local Asset Management
+
+### Frame Templates (`src/assets/frames/frame-templates.ts`)
+```typescript
+export const frameTemplates: FrameTemplate[] = [
+  {
+    id: 'classic-white',
+    name: 'Classic White',
+    category: 'classic',
+    previewImage: '/assets/frames/previews/classic-white.png',
+    cssClass: 'frame-classic-white',
+    style: {
+      borderWidth: 20,
+      borderColor: '#ffffff',
+      titlePosition: 'bottom',
+      titleStyle: {
+        fontSize: 24,
+        fontFamily: 'Tomorrow',
+        color: '#000000',
+        background: '#ffffff',
+      },
+    },
+  },
+  {
+    id: 'instagram-style',
+    name: 'Instagram Style',
+    category: 'modern',
+    previewImage: '/assets/frames/previews/instagram-style.png',
+    cssClass: 'frame-instagram-style',
+    style: {
+      borderWidth: 40,
+      borderColor: '#ffffff',
+      backgroundColor: '#ffffff',
+      titlePosition: 'bottom',
+      titleStyle: {
+        fontSize: 18,
+        fontFamily: 'Geist',
+        color: '#333333',
+      },
+    },
+  },
+  // Add more templates...
+];
+```
+
+### Overlay Icons (`src/assets/icons/overlay-icons.ts`)
+```typescript
+export const overlayIcons: OverlayIcon[] = [
+  {
+    id: 'star-1',
+    name: 'Star',
+    category: 'shapes',
+    iconPath: '/assets/icons/star.svg',
+    iconType: 'svg',
+    defaultSize: 64,
+  },
+  {
+    id: 'heart-1',
+    name: 'Heart',
+    category: 'shapes',
+    iconPath: '/assets/icons/heart.svg',
+    iconType: 'svg',
+    defaultSize: 64,
+  },
+  {
+    id: 'sparkle-1',
+    name: 'Sparkle',
+    category: 'effects',
+    iconPath: '/assets/icons/sparkle.svg',
+    iconType: 'svg',
+    defaultSize: 48,
+  },
+  // Add more icons...
+];
+```
+
+### Asset Directory Structure
+```
+src/assets/
+├── frames/
+│   ├── previews/          # Frame preview images
+│   │   ├── classic-white.png
+│   │   └── instagram-style.png
+│   └── frame-templates.ts  # Frame definitions
+├── icons/
+│   ├── overlay-icons.ts   # Icon definitions
+│   ├── star.svg
+│   ├── heart.svg
+│   └── sparkle.svg
+└── css/
+    └── frame-styles.css   # Frame CSS classes
+```
+
+Follow existing context patterns and extend with photobooth-specific data management needs.

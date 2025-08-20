@@ -1,0 +1,203 @@
+---
+alwaysApply: true
+description: Overview and quick reference for photobooth application development
+---
+
+# Photobooth Application Overview
+
+## Quick Start Guide
+
+This is a **dual Electron application** for a photobooth system with:
+
+1. **Photobooth App** - Interactive photo capture and editing (main app)
+2. **Videotron App** - Gallery display for captured photos (display app)
+
+## Rule Files Reference
+
+- **[photobooth-architecture.mdc](mdc:.cursor/rules/photobooth-architecture.mdc)** - Main architecture and project structure
+- **[photobooth-routing.mdc](mdc:.cursor/rules/photobooth-routing.mdc)** - Page structure and routing patterns
+- **[photobooth-components.mdc](mdc:.cursor/rules/photobooth-components.mdc)** - Component architecture and UI patterns
+- **[electron-photobooth.mdc](mdc:.cursor/rules/electron-photobooth.mdc)** - Electron IPC, camera, and file management
+- **[photobooth-database.mdc](mdc:.cursor/rules/photobooth-database.mdc)** - Database schema and data management
+- **[photobooth-testing.mdc](mdc:.cursor/rules/photobooth-testing.mdc)** - Testing patterns and development workflow
+
+## Development Workflow
+
+### 1. Start Development
+```bash
+# Photobooth app (main)
+npm run start
+
+# Videotron app (gallery display)
+npm run start:videotron
+```
+
+### 2. Key Entry Points
+- **App Root**: [src/App.tsx](mdc:src/App.tsx)
+- **Routing**: [src/routes/routes.tsx](mdc:src/routes/routes.tsx)
+- **Main Process**: [src/main.ts](mdc:src/main.ts)
+- **IPC Setup**: [src/helpers/ipc/context-exposer.ts](mdc:src/helpers/ipc/context-exposer.ts)
+
+### 3. Page Flow (Photobooth)
+1. **Welcome** (`/`) → Start button
+2. **Camera** (`/camera`) → Webcam + capture
+3. **Countdown** (`/countdown`) → 3-second timer
+4. **Preview** (`/preview`) → Photo + retake/finish
+5. **Thank You** (`/thank-you`) → 10s countdown
+6. **Edit Landing** (`/edit`) → Edit entry point
+7. **Edit Photo** (`/edit/photo`) → Frame selection + text
+8. **Overlay** (`/edit/overlay`) → Icon placement
+9. **Complete** (`/complete`) → Final thank you
+
+### 4. Videotron Gallery (`/gallery`)
+- 4-row infinite scrolling grid
+- New photo 5-second center animation
+- Auto-refresh for new photos
+
+## Key Technologies
+
+- **Framework**: React 19 + TypeScript + Electron
+- **Routing**: TanStack Router with memory history
+- **UI**: shadcn/ui + Tailwind CSS
+- **Database**: SQLite (better-sqlite3)
+- **Camera**: getUserMedia API via Electron IPC
+- **Testing**: Vitest + Playwright
+- **Build**: Vite + Electron Forge
+
+## Development Principles
+
+### 1. Follow Existing Patterns
+- Extend current [component structure](mdc:src/components/)
+- Use existing [IPC patterns](mdc:src/helpers/ipc/)
+- Follow [button styling](mdc:src/components/ui/button.tsx)
+- Maintain [TypeScript configuration](mdc:tsconfig.json)
+
+### 2. Fullscreen Experience
+- Remove navigation chrome for photobooth
+- Touch-friendly UI (44px+ touch targets)
+- Kiosk mode for production deployment
+- Seamless auto-navigation with timers
+
+### 3. Dual App Architecture
+- Shared database for photo storage only
+- Local assets for frames and icons (no DB complexity)
+- IPC communication for camera/files
+- Separate entry points per app mode
+- Real-time gallery updates
+
+### 4. Performance Optimized
+- Efficient photo processing
+- Smooth scrolling animations
+- Fast page transitions
+- Memory management for large images
+
+## Quick Commands
+
+```bash
+# Development
+npm run start                    # Start photobooth app
+npm run start:videotron         # Start videotron app
+
+# Testing
+npm run test:unit               # Unit tests
+npm run test:e2e                # E2E tests
+npm run test:all                # All tests
+
+# Building
+npm run package                 # Package for distribution
+npm run make                    # Create installers
+```
+
+## Quick Asset Setup
+
+### Frame Templates (Local Assets)
+```typescript
+// src/assets/frames/frame-templates.ts
+import { frameTemplates } from '@/assets/frames/frame-templates';
+
+// No database needed - just import and use
+const selectedTemplate = frameTemplates.find(f => f.id === 'classic-white');
+```
+
+### Overlay Icons (Local Assets)
+```typescript
+// src/assets/icons/overlay-icons.ts
+import { overlayIcons } from '@/assets/icons/overlay-icons';
+
+// Simple array - no database complexity
+const starIcon = overlayIcons.find(i => i.id === 'star-1');
+```
+
+## Component Quick Reference
+
+### Create New Page
+```typescript
+// src/pages/NewPage.tsx
+export default function NewPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="flex h-screen w-full items-center justify-center">
+      {/* Page content */}
+    </div>
+  );
+}
+```
+
+### Add New Route
+```typescript
+// src/routes/routes.tsx
+export const NewRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/new-page",
+  component: NewPage,
+});
+
+// Add to rootTree
+export const rootTree = RootRoute.addChildren([
+  // ... existing routes,
+  NewRoute,
+]);
+```
+
+### Create Photobooth Component
+```typescript
+// src/components/photobooth/NewComponent.tsx
+interface NewComponentProps {
+  onAction: () => void;
+  className?: string;
+}
+
+export default function NewComponent({ onAction, className }: NewComponentProps) {
+  return (
+    <div className={cn("base-classes", className)}>
+      <Button onClick={onAction} size="lg">
+        Action
+      </Button>
+    </div>
+  );
+}
+```
+
+### Add IPC Handler
+```typescript
+// src/helpers/ipc/new-feature/new-channels.ts
+export const NEW_CHANNELS = {
+  DO_SOMETHING: 'new:do-something',
+} as const;
+
+// src/helpers/ipc/new-feature/new-main.ts
+export function registerNewHandlers() {
+  ipcMain.handle(NEW_CHANNELS.DO_SOMETHING, async () => {
+    // Implementation
+  });
+}
+
+// src/helpers/ipc/new-feature/new-context.ts
+export function exposeNewContext() {
+  contextBridge.exposeInMainWorld('newAPI', {
+    doSomething: () => ipcRenderer.invoke(NEW_CHANNELS.DO_SOMETHING),
+  });
+}
+```
+
+Start with the main architecture rule and follow the patterns established in the existing codebase!

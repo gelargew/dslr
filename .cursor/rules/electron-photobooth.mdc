@@ -1,0 +1,443 @@
+---
+globs: src/helpers/ipc/*,src/main.ts,src/preload.ts,*.config.*
+description: Electron-specific functionality for photobooth application
+---
+
+# Electron Photobooth Integration
+
+## Electron Architecture
+
+### Process Communication
+Follow existing [IPC patterns](mdc:src/helpers/ipc/) for photobooth functionality:
+
+```
+Main Process (src/main.ts)
+├── Camera access & permissions
+├── File system operations
+├── Window management (fullscreen, kiosk mode)
+└── Database connections
+
+Preload Script (src/preload.ts)
+├── Expose camera APIs
+├── Expose file operations
+├── Expose window controls
+
+Renderer Process
+├── React photobooth UI
+├── IPC communication via exposed APIs
+└── Local state management
+```
+
+## Camera Integration
+
+### Camera IPC Channels (`src/helpers/ipc/camera/camera-channels.ts`)
+```typescript
+export const CAMERA_CHANNELS = {
+  GET_DEVICES: 'camera:get-devices',
+  START_CAMERA: 'camera:start',
+  STOP_CAMERA: 'camera:stop',
+  CAPTURE_PHOTO: 'camera:capture',
+  GET_PERMISSIONS: 'camera:permissions',
+} as const;
+```
+
+### Main Process Camera Handler (`src/helpers/ipc/camera/camera-main.ts`)
+```typescript
+import { ipcMain } from 'electron';
+import { CAMERA_CHANNELS } from './camera-channels';
+
+export function registerCameraHandlers() {
+  ipcMain.handle(CAMERA_CHANNELS.GET_DEVICES, async () => {
+    // Get available camera devices
+    // Return device list with IDs and names
+  });
+
+  ipcMain.handle(CAMERA_CHANNELS.GET_PERMISSIONS, async () => {
+    // Check camera permissions
+    // Request permissions if needed
+  });
+
+  ipcMain.handle(CAMERA_CHANNELS.CAPTURE_PHOTO, async (event, deviceId?: string) => {
+    // Capture photo from specified camera
+    // Return base64 image data or file path
+  });
+}
+```
+
+### Preload Camera Context (`src/helpers/ipc/camera/camera-context.ts`)
+```typescript
+import { contextBridge, ipcRenderer } from 'electron';
+import { CAMERA_CHANNELS } from './camera-channels';
+
+export function exposeCameraContext() {
+  contextBridge.exposeInMainWorld('cameraAPI', {
+    getDevices: () => ipcRenderer.invoke(CAMERA_CHANNELS.GET_DEVICES),
+
+    getPermissions: () => ipcRenderer.invoke(CAMERA_CHANNELS.GET_PERMISSIONS),
+
+    capturePhoto: (deviceId?: string) =>
+      ipcRenderer.invoke(CAMERA_CHANNELS.CAPTURE_PHOTO, deviceId),
+  });
+}
+```
+
+## File Management
+
+### Photo Storage IPC (`src/helpers/ipc/storage/storage-channels.ts`)
+```typescript
+export const STORAGE_CHANNELS = {
+  SAVE_PHOTO: 'storage:save-photo',
+  SAVE_GENERATED_PHOTO: 'storage:save-generated-photo',
+  GET_PHOTOS: 'storage:get-photos',
+  DELETE_PHOTO: 'storage:delete-photo',
+  GET_STORAGE_PATH: 'storage:get-path',
+} as const;
+```
+
+### Main Process Storage Handler (`src/helpers/ipc/storage/storage-main.ts`)
+```typescript
+import { ipcMain, app } from 'electron';
+import { join } from 'path';
+import { writeFile, readdir, unlink } from 'fs/promises';
+import { STORAGE_CHANNELS } from './storage-channels';
+
+const PHOTOS_DIR = join(app.getPath('userData'), 'photos');
+
+export function registerStorageHandlers() {
+  ipcMain.handle(STORAGE_CHANNELS.SAVE_PHOTO, async (event, photoData: string, metadata: PhotoMetadata) => {
+    // Save original captured photo to local storage
+    // Generate unique filename
+    // Save metadata
+    // Return saved photo info
+  });
+
+  ipcMain.handle(STORAGE_CHANNELS.SAVE_GENERATED_PHOTO, async (event, photoData: string, metadata: GeneratedPhotoMetadata) => {
+    // Save final edited photo (with frame + overlays)
+    // Convert base64 to file
+    // Generate unique filename for final photo
+    // Update database with final photo path
+    // Add to videotron display queue
+  });
+
+  ipcMain.handle(STORAGE_CHANNELS.GET_PHOTOS, async () => {
+    // Get all saved photos
+    // Return photo list with metadata
+  });
+
+  ipcMain.handle(STORAGE_CHANNELS.DELETE_PHOTO, async (event, photoId: string) => {
+    // Delete specific photo
+    // Clean up files and metadata
+  });
+
+  ipcMain.handle(STORAGE_CHANNELS.GET_STORAGE_PATH, () => PHOTOS_DIR);
+}
+```
+
+## Window Management
+
+### Kiosk Mode IPC (`src/helpers/ipc/window/window-extensions.ts`)
+```typescript
+// Extend existing window helpers for photobooth
+import { ipcMain, BrowserWindow } from 'electron';
+
+export const PHOTOBOOTH_WINDOW_CHANNELS = {
+  ENTER_KIOSK: 'window:enter-kiosk',
+  EXIT_KIOSK: 'window:exit-kiosk',
+  SET_FULLSCREEN: 'window:set-fullscreen',
+  HIDE_CURSOR: 'window:hide-cursor',
+} as const;
+
+export function registerPhotoboothWindowHandlers(window: BrowserWindow) {
+  ipcMain.handle(PHOTOBOOTH_WINDOW_CHANNELS.ENTER_KIOSK, () => {
+    window.setKiosk(true);
+    window.setAutoHideMenuBar(true);
+  });
+
+  ipcMain.handle(PHOTOBOOTH_WINDOW_CHANNELS.EXIT_KIOSK, () => {
+    window.setKiosk(false);
+    window.setAutoHideMenuBar(false);
+  });
+
+  ipcMain.handle(PHOTOBOOTH_WINDOW_CHANNELS.SET_FULLSCREEN, (event, fullscreen: boolean) => {
+    window.setFullScreen(fullscreen);
+  });
+}
+```
+
+## Database Integration
+
+### SQLite Database Setup (`src/helpers/database/database-main.ts`)
+```typescript
+import Database from 'better-sqlite3';
+import { join } from 'path';
+import { app } from 'electron';
+
+const DB_PATH = join(app.getPath('userData'), 'photobooth.db');
+
+export class PhotoboothDatabase {
+  private db: Database.Database;
+
+  constructor() {
+    this.db = new Database(DB_PATH);
+    this.initializeTables();
+  }
+
+  private initializeTables() {
+    // Photos table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS photos (
+        id TEXT PRIMARY KEY,
+        filename TEXT NOT NULL,
+        thumbnail TEXT,
+        frame_template TEXT,
+        frame_text TEXT,
+        overlays TEXT, -- JSON array
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_edited BOOLEAN DEFAULT FALSE
+      )
+    `);
+
+    // Templates table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS frame_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        style TEXT NOT NULL, -- JSON object
+        preview_image TEXT
+      )
+    `);
+  }
+
+  // Photo operations
+  savePhoto(photoData: PhotoData): string { /* ... */ }
+  getPhotos(limit?: number): PhotoData[] { /* ... */ }
+  updatePhoto(id: string, updates: Partial<PhotoData>): void { /* ... */ }
+  deletePhoto(id: string): void { /* ... */ }
+}
+```
+
+## Dual Application Setup
+
+### App Mode Detection (`src/helpers/app-mode.ts`)
+```typescript
+export type AppMode = 'photobooth' | 'videotron';
+
+export function getAppMode(): AppMode {
+  // Check command line arguments or environment variables
+  const args = process.argv;
+  if (args.includes('--videotron') || args.includes('--gallery')) return 'videotron';
+  return 'photobooth';
+}
+
+export function getInitialRoute(mode: AppMode): string {
+  return mode === 'videotron' ? '/gallery' : '/';
+}
+
+export function createAppWindow(mode: AppMode) {
+  const windowOptions = {
+    photobooth: {
+      width: 1920,
+      height: 1080,
+      fullscreen: true,
+      kiosk: true,
+      autoHideMenuBar: true,
+      title: 'Photobooth',
+    },
+    videotron: {
+      width: 1920,
+      height: 1080,
+      fullscreen: true,
+      frame: false,
+      resizable: false,
+      title: 'Gallery Display',
+      alwaysOnTop: false,
+    },
+  };
+
+  return new BrowserWindow({
+    ...windowOptions[mode],
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: join(__dirname, 'preload.js'),
+    },
+  });
+}
+```
+
+### Main Process Updates (`src/main.ts`)
+```typescript
+import { registerCameraHandlers } from './helpers/ipc/camera/camera-main';
+import { registerStorageHandlers } from './helpers/ipc/storage/storage-main';
+import { registerPhotoboothWindowHandlers } from './helpers/ipc/window/window-extensions';
+import { PhotoboothDatabase } from './helpers/database/database-main';
+import { getAppMode, createAppWindow, getInitialRoute } from './helpers/app-mode';
+
+// In app.whenReady()
+const appMode = getAppMode();
+const mainWindow = createAppWindow(appMode);
+
+// Register all IPC handlers (both apps need these)
+registerCameraHandlers();
+registerStorageHandlers();
+registerPhotoboothWindowHandlers(mainWindow);
+
+// Initialize database (shared between both modes)
+const database = new PhotoboothDatabase();
+
+// Load with initial route based on app mode
+const isDev = process.env.NODE_ENV === 'development';
+const baseURL = isDev ? 'http://localhost:5173' : `file://${join(__dirname, '../renderer/index.html')}`;
+const initialRoute = getInitialRoute(appMode);
+
+mainWindow.loadURL(`${baseURL}${initialRoute}`);
+
+// Optional: Set app mode in renderer for conditional features
+mainWindow.webContents.once('dom-ready', () => {
+  mainWindow.webContents.send('app-mode', appMode);
+});
+```
+
+### Preload Updates (`src/preload.ts`)
+```typescript
+// Extend existing context exposer
+import exposeContexts from './helpers/ipc/context-exposer';
+import { exposeCameraContext } from './helpers/ipc/camera/camera-context';
+import { exposeStorageContext } from './helpers/ipc/storage/storage-context';
+
+exposeContexts(); // Existing theme and window contexts
+exposeCameraContext();
+exposeStorageContext();
+```
+
+## Type Definitions
+
+### Global Types (`src/types/photobooth.d.ts`)
+```typescript
+interface PhotoData {
+  id: string;
+  filename: string;
+  thumbnail?: string;
+  frameTemplate?: string;
+  frameText?: string;
+  overlays: IconOverlay[];
+  createdAt: Date;
+  isEdited: boolean;
+}
+
+interface PhotoMetadata {
+  frameTemplate?: string;
+  frameText?: string;
+  overlays: IconOverlay[];
+}
+
+interface CameraDevice {
+  id: string;
+  label: string;
+  kind: 'videoinput';
+}
+
+// Extend existing window interface
+declare global {
+  interface Window {
+    cameraAPI: {
+      getDevices(): Promise<CameraDevice[]>;
+      getPermissions(): Promise<boolean>;
+      capturePhoto(deviceId?: string): Promise<string>;
+    };
+    storageAPI: {
+      savePhoto(photoData: string, metadata: PhotoMetadata): Promise<PhotoData>;
+      saveGeneratedPhoto(photoData: string, metadata: GeneratedPhotoMetadata): Promise<PhotoData>;
+      getPhotos(): Promise<PhotoData[]>;
+      deletePhoto(photoId: string): Promise<void>;
+      getStoragePath(): Promise<string>;
+    };
+  }
+}
+```
+
+## Production Configuration
+
+### Forge Configuration (`forge.config.ts`)
+```typescript
+// Add to existing config for photobooth deployment
+export default {
+  // ... existing config
+  makers: [
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        setupExe: 'photobooth-setup.exe',
+        name: 'PhotoboothApp'
+      }
+    }
+  ],
+  plugins: [
+    // ... existing plugins
+    {
+      name: '@electron-forge/plugin-auto-unpack-natives',
+      config: {
+        unpackNativeModules: ['better-sqlite3']
+      }
+    }
+  ]
+};
+```
+
+## Development Scripts
+
+Update [package.json](mdc:package.json) scripts:
+```json
+{
+  "scripts": {
+    "start": "electron-forge start",
+    "start:videotron": "electron-forge start -- --videotron",
+    "start:gallery": "electron-forge start -- --gallery",
+    "dev:dual": "concurrently \"npm run start\" \"npm run start:videotron\"",
+    "build": "electron-forge package",
+    "build:videotron": "electron-forge package -- --videotron"
+  }
+}
+```
+
+## Access Methods
+
+### 1. Command Line Arguments
+```bash
+# Photobooth mode (default)
+npm run start
+
+# Videotron/Gallery mode
+npm run start:videotron
+# or
+npm run start:gallery
+
+# Both apps simultaneously (for testing)
+npm run dev:dual
+```
+
+### 2. URL-based Access (Development)
+```bash
+# Direct browser access during development
+http://localhost:5173/          # Photobooth
+http://localhost:5173/gallery   # Videotron
+```
+
+### 3. Runtime App Mode Detection
+```typescript
+// In React components, detect current mode
+const [appMode, setAppMode] = useState<AppMode>('photobooth');
+
+useEffect(() => {
+  window.electronAPI?.onAppMode?.((mode: AppMode) => {
+    setAppMode(mode);
+  });
+}, []);
+
+// Conditional rendering based on mode
+if (appMode === 'videotron') {
+  return <GalleryOnlyFeatures />;
+}
+```
+
+Follow existing [IPC patterns](mdc:src/helpers/ipc/context-exposer.ts) and extend systematically for photobooth functionality.

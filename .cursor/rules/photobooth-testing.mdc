@@ -1,0 +1,501 @@
+---
+globs: src/tests/*,*.test.*,*.spec.*
+description: Testing patterns and development workflow for photobooth application
+---
+
+# Photobooth Testing & Development
+
+## Testing Architecture
+
+Follow existing testing setup with [Vitest](mdc:vitest.config.ts) and [Playwright](mdc:playwright.config.ts).
+
+### Test Structure
+```
+src/tests/
+├── unit/
+│   ├── components/
+│   │   ├── photobooth/
+│   │   │   ├── Camera.test.tsx
+│   │   │   ├── PhotoPreview.test.tsx
+│   │   │   └── FrameSelector.test.tsx
+│   │   └── videotron/
+│   │       ├── PhotoGrid.test.tsx
+│   │       └── ScrollingRow.test.tsx
+│   ├── hooks/
+│   │   ├── usePhotoCapture.test.ts
+│   │   └── usePhotoEditor.test.ts
+│   ├── helpers/
+│   │   ├── camera-utils.test.ts
+│   │   └── database-service.test.ts
+│   └── setup.ts
+├── integration/
+│   ├── photo-workflow.test.ts
+│   ├── edit-workflow.test.ts
+│   └── gallery-display.test.ts
+└── e2e/
+    ├── photobooth-flow.test.ts
+    ├── dual-app.test.ts
+    └── kiosk-mode.test.ts
+```
+
+## Unit Testing Patterns
+
+### Component Testing Template
+```typescript
+// src/tests/unit/components/photobooth/PhotoPreview.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
+import PhotoPreview from '@/components/photobooth/PhotoPreview';
+
+const mockPhoto = {
+  id: 'test-photo-1',
+  filename: 'test.jpg',
+  file_path: '/path/to/test.jpg',
+  original_width: 1920,
+  original_height: 1080,
+  file_size: 2048576,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+  is_edited: false,
+  is_deleted: false,
+};
+
+describe('PhotoPreview', () => {
+  it('displays photo correctly', () => {
+    render(<PhotoPreview photo={mockPhoto} />);
+
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', mockPhoto.file_path);
+  });
+
+  it('calls onRetake when retake button clicked', () => {
+    const onRetake = vi.fn();
+    render(<PhotoPreview photo={mockPhoto} onRetake={onRetake} />);
+
+    fireEvent.click(screen.getByText('Retake'));
+    expect(onRetake).toHaveBeenCalled();
+  });
+
+  it('calls onFinish when finish button clicked', () => {
+    const onFinish = vi.fn();
+    render(<PhotoPreview photo={mockPhoto} onFinish={onFinish} />);
+
+    fireEvent.click(screen.getByText('Finish'));
+    expect(onFinish).toHaveBeenCalled();
+  });
+});
+```
+
+### Hook Testing
+```typescript
+// src/tests/unit/hooks/usePhotoCapture.test.ts
+import { renderHook, act } from '@testing-library/react';
+import { vi } from 'vitest';
+import { usePhotoCapture } from '@/hooks/usePhotoCapture';
+import { PhotoContextProvider } from '@/contexts/PhotoContext';
+
+// Mock window.cameraAPI
+Object.defineProperty(window, 'cameraAPI', {
+  value: {
+    capturePhoto: vi.fn().mockResolvedValue('mock-image-data'),
+  },
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <PhotoContextProvider>{children}</PhotoContextProvider>
+);
+
+describe('usePhotoCapture', () => {
+  it('captures photo successfully', async () => {
+    const { result } = renderHook(() => usePhotoCapture(), { wrapper });
+
+    await act(async () => {
+      await result.current.capture();
+    });
+
+    expect(window.cameraAPI.capturePhoto).toHaveBeenCalled();
+    expect(result.current.currentPhoto).toBeDefined();
+  });
+
+  it('handles capture errors', async () => {
+    window.cameraAPI.capturePhoto = vi.fn().mockRejectedValue(new Error('Camera error'));
+
+    const { result } = renderHook(() => usePhotoCapture(), { wrapper });
+
+    await expect(async () => {
+      await act(async () => {
+        await result.current.capture();
+      });
+    }).rejects.toThrow('Camera error');
+  });
+});
+```
+
+### Database Testing
+```typescript
+// src/tests/unit/helpers/database-service.test.ts
+import { DatabaseService } from '@/helpers/database/database-service';
+import Database from 'better-sqlite3';
+import { mkdtempSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+describe('DatabaseService', () => {
+  let dbService: DatabaseService;
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'photobooth-test-'));
+    const dbPath = join(tempDir, 'test.db');
+    dbService = new DatabaseService(dbPath);
+  });
+
+  afterEach(() => {
+    dbService.close();
+    rmSync(tempDir, { recursive: true });
+  });
+
+  it('saves photo correctly', async () => {
+    const photoData = {
+      filename: 'test.jpg',
+      filePath: '/path/to/test.jpg',
+      width: 1920,
+      height: 1080,
+      fileSize: 2048576,
+    };
+
+    const savedPhoto = await dbService.savePhoto(photoData);
+
+    expect(savedPhoto.id).toBeDefined();
+    expect(savedPhoto.filename).toBe(photoData.filename);
+    expect(savedPhoto.file_path).toBe(photoData.filePath);
+  });
+
+  it('retrieves recent photos', () => {
+    // Add test photos
+    const photos = dbService.getRecentPhotos(10);
+    expect(Array.isArray(photos)).toBe(true);
+  });
+});
+```
+
+## Integration Testing
+
+### Photo Workflow Testing
+```typescript
+// src/tests/integration/photo-workflow.test.ts
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from '@tanstack/react-router';
+import App from '@/App';
+
+// Mock all IPC APIs
+vi.mock('@/helpers/ipc/camera/camera-context');
+vi.mock('@/helpers/ipc/storage/storage-context');
+
+describe('Photo Workflow Integration', () => {
+  it('completes full photo capture workflow', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    // Start from welcome page
+    expect(screen.getByText('Start')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Start'));
+
+    // Should navigate to camera page
+    await waitFor(() => {
+      expect(screen.getByText('Capture')).toBeInTheDocument();
+    });
+
+    // Capture photo
+    fireEvent.click(screen.getByText('Capture'));
+
+    // Should show countdown
+    await waitFor(() => {
+      expect(screen.getByText('3')).toBeInTheDocument();
+    });
+
+    // Wait for countdown completion and preview
+    await waitFor(() => {
+      expect(screen.getByText('Retake')).toBeInTheDocument();
+      expect(screen.getByText('Finish')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('handles retake functionality', async () => {
+    // Similar test for retake workflow
+  });
+});
+```
+
+### Edit Workflow Testing
+```typescript
+// src/tests/integration/edit-workflow.test.ts
+describe('Edit Workflow Integration', () => {
+  it('completes photo editing workflow', async () => {
+    // Test frame selection
+    // Test text input
+    // Test overlay addition
+    // Test final save
+  });
+
+  it('navigates between edit steps correctly', async () => {
+    // Test navigation from edit to overlay page
+    // Test back button functionality
+  });
+});
+```
+
+## E2E Testing with Playwright
+
+### Photobooth Flow E2E
+```typescript
+// src/tests/e2e/photobooth-flow.test.ts
+import { test, expect } from '@playwright/test';
+import { ElectronApplication, _electron as electron } from 'playwright';
+
+let electronApp: ElectronApplication;
+
+test.beforeAll(async () => {
+  electronApp = await electron.launch({
+    args: ['dist/main.js']
+  });
+});
+
+test.afterAll(async () => {
+  await electronApp.close();
+});
+
+test('photobooth full workflow', async () => {
+  const window = await electronApp.firstWindow();
+
+  // Test welcome page
+  await expect(window.locator('text=Start')).toBeVisible();
+  await window.click('text=Start');
+
+  // Test camera page
+  await expect(window.locator('text=Capture')).toBeVisible();
+
+  // Mock camera capture (since we can't access real camera in tests)
+  await window.evaluate(() => {
+    window.cameraAPI.capturePhoto = () => Promise.resolve('mock-image-data');
+  });
+
+  await window.click('text=Capture');
+
+  // Test countdown
+  await expect(window.locator('text=3')).toBeVisible();
+
+  // Wait for preview
+  await expect(window.locator('text=Retake')).toBeVisible({ timeout: 5000 });
+  await expect(window.locator('text=Finish')).toBeVisible();
+
+  // Test finish flow
+  await window.click('text=Finish');
+  await expect(window.locator('text=Your moment is saved')).toBeVisible();
+});
+
+test('kiosk mode functionality', async () => {
+  const window = await electronApp.firstWindow();
+
+  // Test fullscreen
+  const isFullscreen = await window.evaluate(() => {
+    return window.screen.width === window.innerWidth && window.screen.height === window.innerHeight;
+  });
+  expect(isFullscreen).toBe(true);
+
+  // Test no menu bar
+  const hasMenuBar = await window.evaluate(() => {
+    return !!document.querySelector('.menu-bar');
+  });
+  expect(hasMenuBar).toBe(false);
+});
+```
+
+### Dual App Testing
+```typescript
+// src/tests/e2e/dual-app.test.ts
+test('photobooth and videotron communication', async () => {
+  // Launch photobooth app
+  const photoboothApp = await electron.launch({
+    args: ['dist/main.js']
+  });
+
+  // Launch videotron app
+  const videotronApp = await electron.launch({
+    args: ['dist/main.js', '--videotron']
+  });
+
+  const photoboothWindow = await photoboothApp.firstWindow();
+  const videotronWindow = await videotronApp.firstWindow();
+
+  // Capture photo in photobooth
+  // ... capture workflow ...
+
+  // Verify photo appears in videotron gallery
+  await expect(videotronWindow.locator('.photo-grid img').first()).toBeVisible({ timeout: 10000 });
+
+  await photoboothApp.close();
+  await videotronApp.close();
+});
+```
+
+## Mock Strategies
+
+### IPC Mocking
+```typescript
+// src/tests/mocks/ipc-mocks.ts
+export const mockCameraAPI = {
+  getDevices: vi.fn().mockResolvedValue([
+    { id: 'camera1', label: 'Test Camera', kind: 'videoinput' }
+  ]),
+  getPermissions: vi.fn().mockResolvedValue(true),
+  capturePhoto: vi.fn().mockResolvedValue('data:image/jpeg;base64,mock-image-data'),
+};
+
+export const mockStorageAPI = {
+  savePhoto: vi.fn().mockResolvedValue({
+    id: 'mock-photo-1',
+    filename: 'mock.jpg',
+    file_path: '/mock/path.jpg',
+    // ... other properties
+  }),
+  getPhotos: vi.fn().mockResolvedValue([]),
+  deletePhoto: vi.fn().mockResolvedValue(undefined),
+  getStoragePath: vi.fn().mockResolvedValue('/mock/storage'),
+};
+
+// Setup in test files
+beforeEach(() => {
+  Object.defineProperty(window, 'cameraAPI', { value: mockCameraAPI });
+  Object.defineProperty(window, 'storageAPI', { value: mockStorageAPI });
+});
+```
+
+### Database Mocking
+```typescript
+// src/tests/mocks/database-mock.ts
+export class MockDatabaseService {
+  private photos: PhotoRecord[] = [];
+  private edits: PhotoEditRecord[] = [];
+
+  async savePhoto(photoData: CreatePhotoData): Promise<PhotoRecord> {
+    const photo: PhotoRecord = {
+      id: `mock-${Date.now()}`,
+      ...photoData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_edited: false,
+      is_deleted: false,
+    };
+    this.photos.push(photo);
+    return photo;
+  }
+
+  getRecentPhotos(limit: number = 40): PhotoRecord[] {
+    return this.photos.slice(-limit);
+  }
+
+  // ... other methods
+}
+```
+
+## Performance Testing
+
+### Load Testing for Gallery
+```typescript
+// src/tests/performance/gallery-performance.test.ts
+test('gallery handles 40+ photos smoothly', async () => {
+  const startTime = performance.now();
+
+  // Render gallery with 40 photos
+  render(<PhotoGrid photos={generateMockPhotos(40)} />);
+
+  const endTime = performance.now();
+  expect(endTime - startTime).toBeLessThan(1000); // Should render in < 1s
+});
+
+test('scrolling animation performance', async () => {
+  // Test CSS animation performance
+  // Monitor frame rates during scrolling
+});
+```
+
+## Development Helpers
+
+### Test Data Generators
+```typescript
+// src/tests/helpers/test-data.ts
+export function generateMockPhoto(overrides?: Partial<PhotoRecord>): PhotoRecord {
+  return {
+    id: `photo-${Math.random().toString(36).substr(2, 9)}`,
+    filename: 'test-photo.jpg',
+    file_path: '/mock/path/test-photo.jpg',
+    original_width: 1920,
+    original_height: 1080,
+    file_size: 2048576,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    is_edited: false,
+    is_deleted: false,
+    ...overrides,
+  };
+}
+
+export function generateMockPhotos(count: number): PhotoRecord[] {
+  return Array.from({ length: count }, () => generateMockPhoto());
+}
+```
+
+### Debug Utilities
+```typescript
+// src/tests/helpers/debug-utils.ts
+export function logComponentRender(componentName: string, props?: any) {
+  if (process.env.NODE_ENV === 'test') {
+    console.log(`[TEST] Rendering ${componentName}`, props);
+  }
+}
+
+export function logElectronIPC(channel: string, data?: any) {
+  if (process.env.NODE_ENV === 'test') {
+    console.log(`[TEST] IPC ${channel}`, data);
+  }
+}
+```
+
+## CI/CD Testing
+
+### GitHub Actions Test Configuration
+```yaml
+# .github/workflows/test.yml
+name: Photobooth Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+```
+
+Follow existing [test setup patterns](mdc:src/tests/unit/setup.ts) and extend systematically for photobooth functionality.

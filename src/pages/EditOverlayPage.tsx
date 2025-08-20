@@ -1,19 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { usePhotoContext } from "@/contexts/PhotoContext";
 import { useEditContext } from "@/contexts/EditContext";
-import { overlayIcons, getIconsByCategory, getIconCategories, createDefaultIconOverlay } from "@/assets/icons/overlay-icons";
-import { cn } from "@/utils/tailwind";
+import { overlayIcons, createDefaultIconOverlay } from "@/assets/icons/overlay-icons";
 
 export default function EditOverlayPage() {
   const navigate = useNavigate();
   const { currentPhoto } = usePhotoContext();
   const { editState, addOverlay, removeOverlay } = useEditContext();
-  const [selectedCategory, setSelectedCategory] = useState<string>("Event");
-
-  const categories = getIconCategories();
-  const categoryIcons = getIconsByCategory(selectedCategory);
+  const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
 
   const handleBack = () => {
     navigate({ to: "/edit/photo" });
@@ -23,14 +18,34 @@ export default function EditOverlayPage() {
     navigate({ to: "/complete" });
   };
 
-  const handleIconClick = (iconId: string) => {
-    const overlay = createDefaultIconOverlay(iconId);
-    addOverlay(overlay);
+  const handleNoOverlay = () => {
+    // Remove all overlays manually and clear selected icons
+    editState.overlays.forEach(overlay => {
+      removeOverlay(overlay.id);
+    });
+    setSelectedIcons([]);
   };
 
-  const handleRemoveOverlay = (overlayId: string) => {
-    removeOverlay(overlayId);
+  const handleIconClick = (iconId: string) => {
+    if (selectedIcons.includes(iconId)) {
+      // Icon is already selected - unselect it
+      const overlayToRemove = editState.overlays.find(overlay => overlay.iconId === iconId);
+      if (overlayToRemove) {
+        removeOverlay(overlayToRemove.id);
+      }
+      setSelectedIcons(selectedIcons.filter(id => id !== iconId));
+    } else {
+      // Icon is not selected - select it
+      const overlay = createDefaultIconOverlay(iconId);
+      addOverlay(overlay);
+      setSelectedIcons([...selectedIcons, iconId]);
+    }
   };
+
+  // Group icons by category as in Figma design
+  const eventIcons = overlayIcons.filter(icon => icon.category === "Event");
+  const stickerIcons = overlayIcons.filter(icon => icon.category === "Stiker"); // Note: "Stiker" not "Sticker"
+  const moodIcons = overlayIcons.filter(icon => icon.category === "Mood");
 
   if (!currentPhoto) {
     return (
@@ -38,43 +53,34 @@ export default function EditOverlayPage() {
         <div className="text-center text-white space-y-4">
           <h2 className="text-2xl font-bold text-red-400">No Photo Found</h2>
           <p className="text-lg">Please take a photo first.</p>
-          <Button onClick={() => navigate({ to: "/camera" })} size="lg">
+          <button
+            onClick={() => navigate({ to: "/camera" })}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
             Take Photo
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
-  // Apply frame styling to photo preview (same as EditPhotoPage)
-  const getPhotoContainerStyle = () => {
-    if (!editState.selectedFrame) return {};
-
-    if (editState.selectedFrame.style.useFrameImage) {
-      return { position: 'relative' as const };
-    } else {
-      return {
-        border: `${editState.selectedFrame.style.borderWidth}px solid ${editState.selectedFrame.style.borderColor}`,
-        backgroundColor: editState.selectedFrame.style.backgroundColor || 'transparent',
-      };
-    }
-  };
-
+  // Get proper text style using the frame's text settings (SAME AS EDIT PHOTO PAGE)
   const getTextStyle = () => {
-    if (!editState.selectedFrame || !editState.frameText || !editState.textSettings) return { display: 'none' };
+    if (!editState.selectedFrame || !editState.frameText || !editState.selectedFrame.style.textSettings.enabled) return { display: 'none' };
 
+    const textSettings = editState.selectedFrame.style.textSettings;
     return {
       position: 'absolute' as const,
-      left: `${(editState.textSettings.position.x / 1080) * 100}%`,
-      top: `${(editState.textSettings.position.y / 1080) * 100}%`,
-      transform: 'translate(0, 0)',
-      fontSize: `${editState.textSettings.fontSize * 0.6}px`,
-      fontFamily: editState.selectedFrame.style.textSettings.fontFamily,
-      color: editState.textSettings.color,
-      backgroundColor: editState.selectedFrame.style.textSettings.background || 'transparent',
-      padding: `${(editState.selectedFrame.style.textSettings.padding || 0) * 0.6}px`,
-      textAlign: 'left' as const,
-      maxWidth: '420px',
+      left: `${(textSettings.position.x / 1080) * 100}%`,
+      top: `${(textSettings.position.y / 1080) * 100}%`,
+      transform: 'translate(0, 0)', // No centering - start from exact position
+      fontSize: `${textSettings.fontSize * 0.37}px`, // Scale down for 400px preview (400/1080 = 0.37)
+      fontFamily: textSettings.fontFamily,
+      color: textSettings.color,
+      backgroundColor: textSettings.background || 'transparent',
+      padding: `${(textSettings.padding || 0) * 0.37}px`,
+      textAlign: textSettings.align as 'left' | 'center' | 'right',
+      maxWidth: `${(textSettings.maxWidth || 700) * 0.37}px`, // Scale max width too
       wordWrap: 'break-word' as const,
       whiteSpace: 'pre-wrap' as const,
       zIndex: 10,
@@ -82,197 +88,214 @@ export default function EditOverlayPage() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900">
-      {/* Photo Preview Panel */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="relative max-w-2xl">
-          {/* Photo with Frame and Overlays Container - Square */}
-          <div
-            className="relative rounded-lg overflow-hidden shadow-2xl aspect-square w-full max-w-lg"
-            style={getPhotoContainerStyle()}
-          >
-            {/* Base Photo */}
-            <img
-              src={currentPhoto.file_path}
-              alt="Photo with frame and overlays"
-              className="w-full h-full object-cover"
-            />
-
-            {/* Frame Image Overlay */}
-            {editState.selectedFrame && editState.selectedFrame.style.useFrameImage && editState.selectedFrame.frameImage && (
-              <img
-                src={editState.selectedFrame.frameImage}
-                alt="Frame overlay"
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                style={{ mixBlendMode: 'normal' }}
-              />
-            )}
-
-            {/* Frame Text Overlay */}
-            {editState.selectedFrame && editState.frameText && editState.textSettings && (
-              <div style={getTextStyle()}>
-                {editState.frameText}
-              </div>
-            )}
-
-            {/* Icon Overlays */}
-            {editState.overlays.map((overlay) => {
-              const icon = overlayIcons.find(i => i.id === overlay.iconId);
-              if (!icon) return null;
-
-              return (
-                <div
-                  key={overlay.id}
-                  className="absolute cursor-pointer hover:scale-110 transition-transform"
-                  style={{
-                    left: `${(overlay.position.x / 1080) * 100}%`,
-                    top: `${(overlay.position.y / 1080) * 100}%`,
-                    transform: `translate(-50%, -50%) rotate(${overlay.rotation}deg)`,
-                    zIndex: overlay.zIndex,
-                  }}
-                  onClick={() => handleRemoveOverlay(overlay.id)}
-                  title={`Click to remove ${icon.name}`}
-                >
-                  <img
-                    src={icon.iconPath}
-                    alt={icon.name}
-                    style={{
-                      width: `${overlay.size * 0.6}px`, // Scale for preview
-                      height: `${overlay.size * 0.6}px`,
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Preview Label */}
-          <div className="text-center mt-4 text-gray-600 dark:text-gray-400">
-            <p className="text-sm">Square Preview with Frame & Icons (1080x1080)</p>
-            <p className="text-xs mt-1">
-              Frame: {editState.selectedFrame?.name || 'None'} •
-              Text: "{editState.frameText}" •
-              Icons: {editState.overlays.length}
-            </p>
-          </div>
+    <div
+      className="bg-[#fefcfc] relative size-full grid grid-cols-2"
+      style={{
+        backgroundImage: "url('data:image/svg+xml;utf8,<svg viewBox=\\'0 0 1680 905\\' xmlns=\\'http://www.w3.org/2000/svg\\' preserveAspectRatio=\\'none\\'><rect x=\\'0\\' y=\\'0\\' height=\\'100%\\' width=\\'100%\\' fill=\\'url(%23grad)\\' opacity=\\'1\\'/><defs><radialGradient id=\\'grad\\' gradientUnits=\\'userSpaceOnUse\\' cx=\\'0\\' cy=\\'0\\' r=\\'10\\' gradientTransform=\\'matrix(158.87 -9.5359 17.702 85.58 -24.242 891.94)\\'><stop stop-color=\\'rgba(184,186,190,1)\\' offset=\\'0\\'/><stop stop-color=\\'rgba(231,232,233,1)\\' offset=\\'1\\'/></radialGradient></defs></svg>')"
+      }}
+    >
+      {/* Left Panel - Photo */}
+      <div className="bg-[#f3f3f4] flex flex-col gap-8 items-center justify-center overflow-hidden px-8 py-8 relative rounded-br-[32px] rounded-tr-[32px] shadow-[32px_32px_64px_0px_rgba(0,0,0,0.04)]">
+        <div className="font-['Space_Grotesk'] font-bold leading-[72px] text-[#585d68] text-[64px] text-center tracking-[-1.28px]">
+          Your Photo!
         </div>
+        <div className="h-[400px] w-[400px] overflow-hidden relative rounded-3xl shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
+          <img
+            src={currentPhoto.file_path}
+            alt="Your captured photo"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+
+          {/* Text overlay */}
+          {editState.selectedFrame && editState.frameText && editState.selectedFrame.style.textSettings.enabled && (
+            <div style={getTextStyle()}>
+              {editState.frameText}
+            </div>
+          )}
+
+          {/* Frame overlay if selected */}
+          {editState.selectedFrame && editState.selectedFrame.frameImage && (
+            <img
+              src={editState.selectedFrame.frameImage}
+              alt="Frame overlay"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            />
+          )}
+
+          {/* Icon Overlays */}
+          {editState.overlays.map((overlay) => {
+            const icon = overlayIcons.find(i => i.id === overlay.iconId);
+            if (!icon) return null;
+
+            return (
+              <div
+                key={overlay.id}
+                className="absolute cursor-pointer hover:scale-110 transition-transform"
+                style={{
+                  left: `${(overlay.position.x / 1080) * 100}%`,
+                  top: `${(overlay.position.y / 1080) * 100}%`,
+                  transform: `translate(-50%, -50%) rotate(${overlay.rotation}deg)`,
+                  zIndex: overlay.zIndex,
+                }}
+                onClick={() => {/* Remove overlay functionality can be added later */}}
+                title={`Icon: ${icon.name}`}
+              >
+                <img
+                  src={icon.iconPath}
+                  alt={icon.name}
+                  style={{
+                    width: `${(overlay.size * 0.37)}px`, // Scale for 400px preview
+                    height: `${(overlay.size * 0.37)}px`,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="absolute inset-0 pointer-events-none shadow-[-32px_-32px_64px_0px_inset_rgba(0,0,0,0.04)]" />
       </div>
 
-      {/* Icon Selection Panel */}
-      <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+      {/* Right Panel - Controls */}
+      <div className="flex flex-col gap-6 items-center justify-start overflow-hidden px-8 py-8 relative rounded-bl-[32px] rounded-tl-[32px]">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Add Icons & Stickers
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Step 2 of 2: Tap icons to add them to your photo
-          </p>
-        </div>
-
-        {/* Category Tabs */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex space-x-2 overflow-x-auto">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
-                  selectedCategory === category
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                )}
-              >
-                {category}
-              </button>
-            ))}
+        <div className="flex flex-col gap-2 items-center w-full">
+          <div className="font-['Space_Grotesk'] font-bold leading-[40px] text-[#585d68] text-[36px] text-center tracking-[-0.72px]">
+            Insert Overlay
+          </div>
+          <div className="font-['Public_Sans'] font-medium leading-[30px] text-[#888b93] text-[24px] text-center">
+            Choose stickers and decorations for your photo
           </div>
         </div>
 
-        {/* Icon Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="grid grid-cols-3 gap-3">
-            {categoryIcons.map((icon) => (
-              <button
-                key={icon.id}
-                onClick={() => handleIconClick(icon.id)}
-                className="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
-                title={`Add ${icon.name}`}
-              >
-                <div className="aspect-square flex items-center justify-center mb-2">
-                  <img
-                    src={icon.iconPath}
-                    alt={icon.name}
-                    className="w-12 h-12 object-contain group-hover:scale-110 transition-transform"
-                  />
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                  {icon.name}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Current Overlays */}
-        {editState.overlays.length > 0 && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-              Added Icons ({editState.overlays.length})
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {editState.overlays.map((overlay) => {
-                const icon = overlayIcons.find(i => i.id === overlay.iconId);
-                if (!icon) return null;
-
-                return (
-                  <button
-                    key={overlay.id}
-                    onClick={() => handleRemoveOverlay(overlay.id)}
-                    className="flex items-center space-x-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-800 dark:hover:text-red-200 transition-colors"
-                    title={`Remove ${icon.name}`}
-                  >
-                    <img src={icon.iconPath} alt={icon.name} className="w-4 h-4" />
-                    <span>{icon.name}</span>
-                    <span>×</span>
-                  </button>
-                );
-              })}
+        {/* Content - Scrollable */}
+        <div className="flex-1 w-full overflow-y-auto flex flex-col gap-8">
+          {/* No Overlay Option */}
+          <button
+            onClick={handleNoOverlay}
+            className="flex gap-8 items-center px-8 py-4 border border-[#888b93] rounded-xl w-full hover:border-red-500 hover:bg-red-50 transition-all duration-200"
+          >
+            <div className="flex-1 flex flex-col gap-2">
+              <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#70747d] text-[28px]">
+                No Overlay
+              </div>
+              <div className="font-['Plus_Jakarta_Sans'] font-medium leading-[22px] text-[#888b93] text-[16px]">
+                Clean photo without decorations
+              </div>
             </div>
-          </div>
-        )}
+            <div className="size-12 flex items-center justify-center">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="text-[#888b93]">
+                <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <line x1="16" y1="32" x2="32" y2="16" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+          </button>
 
-        {/* Action Buttons */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
-          <Button
-            onClick={handleFinish}
-            size="lg"
-            className="w-full h-12 text-lg"
-          >
-            Finish & Generate Photo →
-          </Button>
+          {/* Event Section */}
+          {eventIcons.length > 0 && (
+            <div className="flex flex-col gap-2 w-full">
+              <div className="font-['Space_Grotesk'] font-medium leading-[32px] text-[#70747d] text-[28px] tracking-[-0.56px]">
+                Event
+              </div>
+              <div className="flex flex-wrap gap-8">
+                {eventIcons.map((icon) => (
+                  <button
+                    key={icon.id}
+                    onClick={() => handleIconClick(icon.id)}
+                    className={`flex flex-col gap-3 items-center px-8 py-4 border rounded-xl w-80 transition-all duration-200 ${
+                      selectedIcons.includes(icon.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-[#888b93] hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="size-16 flex items-center justify-center">
+                      <img src={icon.iconPath} alt={icon.name} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="font-['Public_Sans'] font-medium leading-[26px] text-[#70747d] text-[20px] text-center">
+                      {icon.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <Button
-            onClick={handleBack}
-            size="lg"
-            variant="outline"
-            className="w-full h-12 text-lg"
-          >
-            ← Back to Frames
-          </Button>
+          {/* Sticker Section */}
+          {stickerIcons.length > 0 && (
+            <div className="flex flex-col gap-2 w-full">
+              <div className="font-['Space_Grotesk'] font-medium leading-[32px] text-[#70747d] text-[28px] tracking-[-0.56px]">
+                Stiker
+              </div>
+              <div className="flex flex-wrap gap-8">
+                {stickerIcons.map((icon) => (
+                  <button
+                    key={icon.id}
+                    onClick={() => handleIconClick(icon.id)}
+                    className={`flex flex-col gap-3 items-center px-8 py-4 border rounded-xl w-80 transition-all duration-200 ${
+                      selectedIcons.includes(icon.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-[#888b93] hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="size-16 flex items-center justify-center">
+                      <img src={icon.iconPath} alt={icon.name} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="font-['Public_Sans'] font-medium leading-[26px] text-[#70747d] text-[20px] text-center">
+                      {icon.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Mood Section */}
+          {moodIcons.length > 0 && (
+            <div className="flex flex-col gap-2 w-full">
+              <div className="font-['Space_Grotesk'] font-medium leading-[32px] text-[#70747d] text-[28px] tracking-[-0.56px]">
+                Mood
+              </div>
+              <div className="flex flex-wrap gap-8">
+                {moodIcons.map((icon) => (
+                  <button
+                    key={icon.id}
+                    onClick={() => handleIconClick(icon.id)}
+                    className={`flex flex-col gap-3 items-center px-8 py-4 border rounded-xl w-80 transition-all duration-200 ${
+                      selectedIcons.includes(icon.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-[#888b93] hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="size-16 flex items-center justify-center">
+                      <img src={icon.iconPath} alt={icon.name} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="font-['Public_Sans'] font-medium leading-[26px] text-[#70747d] text-[20px] text-center">
+                      {icon.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Progress Indicator */}
-        <div className="px-6 pb-4">
-          <div className="flex space-x-2">
-            <div className="flex-1 h-2 bg-blue-500 rounded"></div>
-            <div className="flex-1 h-2 bg-blue-500 rounded"></div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-            <span>Frame & Text</span>
-            <span>Stickers</span>
-          </div>
+        {/* Buttons */}
+        <div className="flex gap-[42px] items-center w-full">
+          <button
+            onClick={handleBack}
+            className="flex-1 bg-[#585d68] opacity-70 hover:opacity-90 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+          >
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
+              Back
+            </div>
+          </button>
+          <button
+            onClick={handleFinish}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+          >
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
+              Finish
+            </div>
+          </button>
         </div>
       </div>
     </div>

@@ -3,15 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { usePhotoContext } from "@/contexts/PhotoContext";
 import { useEditContext } from "@/contexts/EditContext";
-import { FrameTemplate, getDefaultTextSettings } from "@/assets/frames/frame-templates";
-import FrameSelector from "@/components/photobooth/FrameSelector/FrameSelector";
-import FrameDebugger from "@/components/photobooth/FrameDebugger";
-
-interface TextSettings {
-  position: { x: number; y: number };
-  fontSize: number;
-  color: string;
-}
+import { FrameTemplate, frameTemplates } from "@/assets/frames/frame-templates";
 
 export default function EditPhotoPage() {
   const navigate = useNavigate();
@@ -19,76 +11,72 @@ export default function EditPhotoPage() {
   const {
     editState,
     setSelectedFrame,
-    setFrameText,
-    setTextSettings
+    setFrameText
   } = useEditContext();
 
-  // Local state for UI only
-  const [frameImageLoaded, setFrameImageLoaded] = useState<boolean>(false);
-  const [frameImageError, setFrameImageError] = useState<string | null>(null);
-  const [showDebugger, setShowDebugger] = useState<boolean>(false);
+  // Local state
+  const [message, setMessage] = useState<string>("");
 
   // Extract values from edit context
-  const { selectedFrame, frameText, textSettings } = editState;
+  const { selectedFrame, frameText } = editState;
 
-  // Update text settings when frame changes
+  // Initialize message with existing frame text
   useEffect(() => {
-    if (selectedFrame && selectedFrame.style.textSettings.enabled) {
-      const defaultSettings = getDefaultTextSettings(selectedFrame.id);
-      if (defaultSettings) {
-        setTextSettings(defaultSettings);
-      }
-    } else {
-      setTextSettings(null);
+    if (frameText && message !== frameText) {
+      setMessage(frameText);
     }
+  }, [frameText]);
 
-    // Reset frame image states
-    setFrameImageLoaded(false);
-    setFrameImageError(null);
-
-    // Debug logging
-    console.log('🖼️ Frame selected:', {
-      name: selectedFrame?.name,
-      frameImage: selectedFrame?.frameImage,
-      useFrameImage: selectedFrame?.style.useFrameImage,
-      textEnabled: selectedFrame?.style.textSettings.enabled
-    });
-  }, [selectedFrame]);
+  // Set default frame if none selected (prefer frames with text enabled)
+  useEffect(() => {
+    if (!selectedFrame && frameTemplates.length > 0) {
+      // Find a frame with text enabled, or fallback to first frame
+      const frameWithText = frameTemplates.find(frame => frame.style.textSettings.enabled);
+      setSelectedFrame(frameWithText || frameTemplates[0]);
+    }
+  }, [selectedFrame, setSelectedFrame]);
 
   const handleNext = () => {
+    // Save message to frame text
+    setFrameText(message);
     // Navigate to overlay page
     navigate({ to: "/edit/overlay" });
   };
 
-  const handleBack = () => {
-    navigate({ to: "/edit" });
-  };
-
   const handleFrameSelect = (frame: FrameTemplate) => {
     setSelectedFrame(frame);
-    // Clear text when changing frames
-    setFrameText("");
   };
 
-  const handleTextChange = (text: string) => {
-    setFrameText(text);
+  const handleMessageChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    if (value.length <= 80) {
+      setMessage(value);
+      // Update the frame text context in real-time
+      setFrameText(value);
+    }
   };
 
-  const handleTextSettingsChange = (settings: TextSettings) => {
-    setTextSettings(settings);
-  };
+  // Get proper text style using the frame's text settings (RESTORED FROM WORKING VERSION)
+  const getTextStyle = () => {
+    if (!selectedFrame || !message || !selectedFrame.style.textSettings.enabled) return { display: 'none' };
 
-  // Handle frame image loading
-  const handleFrameImageLoad = () => {
-    console.log('✅ Frame image loaded successfully');
-    setFrameImageLoaded(true);
-    setFrameImageError(null);
-  };
-
-  const handleFrameImageError = (error: any) => {
-    console.error('❌ Frame image failed to load:', error);
-    setFrameImageLoaded(false);
-    setFrameImageError('Failed to load frame image');
+    const textSettings = selectedFrame.style.textSettings;
+    return {
+      position: 'absolute' as const,
+      left: `${(textSettings.position.x / 1080) * 100}%`,
+      top: `${(textSettings.position.y / 1080) * 100}%`,
+      transform: 'translate(0, 0)', // No centering - start from exact position
+      fontSize: `${textSettings.fontSize * 0.37}px`, // Scale down for 400px preview (400/1080 = 0.37)
+      fontFamily: textSettings.fontFamily,
+      color: textSettings.color,
+      backgroundColor: textSettings.background || 'transparent',
+      padding: `${(textSettings.padding || 0) * 0.37}px`,
+      textAlign: textSettings.align as 'left' | 'center' | 'right',
+      maxWidth: `${(textSettings.maxWidth || 700) * 0.37}px`, // Scale max width too
+      wordWrap: 'break-word' as const,
+      whiteSpace: 'pre-wrap' as const,
+      zIndex: 10,
+    };
   };
 
   if (!currentPhoto) {
@@ -105,202 +93,111 @@ export default function EditPhotoPage() {
     );
   }
 
-  // Apply frame styling to photo preview
-  const getPhotoContainerStyle = () => {
-    if (!selectedFrame) return {};
-
-    if (selectedFrame.style.useFrameImage) {
-      // For image overlay frames, we'll layer the frame image on top
-      return {
-        position: 'relative' as const,
-      };
-    } else {
-      // For CSS border frames
-      return {
-        border: `${selectedFrame.style.borderWidth}px solid ${selectedFrame.style.borderColor}`,
-        backgroundColor: selectedFrame.style.backgroundColor || 'transparent',
-      };
-    }
-  };
-
-    const getTextStyle = () => {
-    if (!selectedFrame || !frameText || !textSettings) return { display: 'none' };
-
-    return {
-      position: 'absolute' as const,
-      left: `${(textSettings.position.x / 1080) * 100}%`,
-      top: `${(textSettings.position.y / 1080) * 100}%`,
-      transform: 'translate(0, 0)', // No centering - start from exact position
-      fontSize: `${textSettings.fontSize * 0.6}px`, // Scale down for square preview
-      fontFamily: selectedFrame.style.textSettings.fontFamily,
-      color: textSettings.color,
-      backgroundColor: selectedFrame.style.textSettings.background || 'transparent',
-      padding: `${(selectedFrame.style.textSettings.padding || 0) * 0.6}px`,
-      textAlign: 'left', // Always left-align for consistent behavior
-      maxWidth: '420px', // Fixed 700px * 0.6 scaling for preview
-      wordWrap: 'break-word' as const,
-      whiteSpace: 'pre-wrap' as const,
-      zIndex: 10,
-    };
-  };
-
   return (
-    <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900">
-      {/* Photo Preview Panel */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="relative max-w-2xl">
-                    {/* Photo with Frame Container - Square */}
-          <div
-            className="relative rounded-lg overflow-hidden shadow-2xl aspect-square w-full max-w-lg"
-            style={getPhotoContainerStyle()}
-          >
-            {/* Base Photo - Square */}
-            <img
-              src={currentPhoto.file_path}
-              alt="Photo with frame"
-              className="w-full h-full object-cover"
-            />
-
-            {/* Frame Image Overlay (for image-based frames) */}
-            {selectedFrame && selectedFrame.style.useFrameImage && selectedFrame.frameImage && (
-              <>
-                <img
-                  src={selectedFrame.frameImage}
-                  alt="Frame overlay"
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                  style={{
-                    mixBlendMode: 'normal', // Changed from multiply for better visibility
-                    opacity: frameImageLoaded ? 1 : 0,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                  onLoad={handleFrameImageLoad}
-                  onError={handleFrameImageError}
-                />
-
-                {/* Frame Loading Indicator */}
-                {!frameImageLoaded && !frameImageError && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <div className="text-white text-sm">Loading frame...</div>
-                  </div>
-                )}
-
-                {/* Frame Error Indicator */}
-                {frameImageError && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-red-500/20">
-                    <div className="text-red-300 text-sm text-center p-4">
-                      <div>⚠️ Frame Image Error</div>
-                      <div className="text-xs mt-1">{selectedFrame.frameImage}</div>
-                      <div className="text-xs">Check dev tools console</div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Frame Text Overlay */}
-            {selectedFrame && frameText && textSettings && (
-              <div style={getTextStyle()}>
-                {frameText}
-              </div>
-            )}
-          </div>
-
-          {/* Preview Label & Debug Info */}
-          <div className="text-center mt-4 text-gray-600 dark:text-gray-400">
-            <p className="text-sm">Square Preview (1080x1080)</p>
-            {textSettings && (
-              <p className="text-xs mt-1">
-                Text at ({textSettings.position.x}, {textSettings.position.y}) • {textSettings.fontSize}px • {textSettings.color}
-              </p>
-            )}
-            {selectedFrame && selectedFrame.style.useFrameImage && (
-              <div className="text-xs mt-2 p-2 bg-gray-200 dark:bg-gray-700 rounded">
-                <div>Frame: {selectedFrame.frameImage}</div>
-                <div>Status: {
-                  frameImageLoaded ? '✅ Loaded' :
-                  frameImageError ? '❌ Error' :
-                  '🔄 Loading...'
-                }</div>
-              </div>
-            )}
-          </div>
+        <div
+      className="bg-[#fefcfc] relative size-full grid grid-cols-2"
+      style={{
+        backgroundImage: "url('data:image/svg+xml;utf8,<svg viewBox=\\'0 0 1680 905\\' xmlns=\\'http://www.w3.org/2000/svg\\' preserveAspectRatio=\\'none\\'><rect x=\\'0\\' y=\\'0\\' height=\\'100%\\' width=\\'100%\\' fill=\\'url(%23grad)\\' opacity=\\'1\\'/><defs><radialGradient id=\\'grad\\' gradientUnits=\\'userSpaceOnUse\\' cx=\\'0\\' cy=\\'0\\' r=\\'10\\' gradientTransform=\\'matrix(158.87 -9.5359 17.702 85.58 -24.242 891.94)\\'><stop stop-color=\\'rgba(184,186,190,1)\\' offset=\\'0\\'/><stop stop-color=\\'rgba(231,232,233,1)\\' offset=\\'1\\'/></radialGradient></defs></svg>')"
+      }}
+    >
+      {/* Left Panel - Photo */}
+      <div className="bg-[#f3f3f4] flex flex-col gap-8 items-center justify-center overflow-hidden px-8 py-8 relative rounded-br-[32px] rounded-tr-[32px] shadow-[32px_32px_64px_0px_rgba(0,0,0,0.04)]">
+        <div className="font-['Space_Grotesk'] font-bold leading-[72px] text-[#585d68] text-[64px] text-center tracking-[-1.28px]">
+          Your Photo!
         </div>
+        <div className="h-[400px] w-[400px] overflow-hidden relative rounded-3xl shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
+          <img
+            src={currentPhoto.file_path}
+            alt="Your captured photo"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+
+          {/* Text overlay - PROPERLY POSITIONED */}
+          {selectedFrame && message && selectedFrame.style.textSettings.enabled && (
+            <div style={getTextStyle()}>
+              {message}
+            </div>
+          )}
+
+
+
+          {/* Frame overlay if selected */}
+          {selectedFrame && selectedFrame.frameImage && (
+            <img
+              src={selectedFrame.frameImage}
+              alt="Frame overlay"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            />
+          )}
+        </div>
+        <div className="absolute inset-0 pointer-events-none shadow-[-32px_-32px_64px_0px_inset_rgba(0,0,0,0.04)]" />
       </div>
 
-      {/* Edit Controls Panel */}
-      <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Add Frame & Text
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Step 1 of 2: Choose a frame and add text
-          </p>
-
-          {/* Debug Controls */}
-          <div className="mt-3 flex space-x-2">
-            <button
-              onClick={() => setShowDebugger(!showDebugger)}
-              className="text-xs px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              {showDebugger ? 'Hide' : 'Show'} Debugger
-            </button>
-            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-              Ctrl+Shift+I for dev tools
+      {/* Right Panel - Controls */}
+      <div className="flex flex-col gap-6 items-center justify-start overflow-hidden px-8 py-8 relative rounded-bl-[32px] rounded-tl-[32px]">
+                  {/* Message Input Section */}
+        <div className="flex flex-col gap-4 items-center w-full">
+          <div className="font-['Space_Grotesk'] font-bold leading-[32px] text-[#585d68] text-[28px] text-center tracking-[-0.56px]">
+            Write a short message
+          </div>
+          <div className="flex flex-col gap-2 items-end w-full">
+            <div className="font-['Public_Sans'] font-medium leading-[20px] text-[14px] text-[#70747d] w-full text-right">
+              <span className="text-red-500">*</span>max 80 chars
+            </div>
+            <div className="flex h-[70px] items-start p-[12px] w-full border border-[#585d68] rounded-xl">
+              <textarea
+                value={message}
+                onChange={handleMessageChange}
+                placeholder="Add your message here..."
+                className="w-full h-full font-['Plus_Jakarta_Sans'] font-medium leading-[24px] text-[18px] text-[#70747d] bg-transparent border-none outline-none resize-none"
+                maxLength={80}
+              />
+            </div>
+            <div className="font-['Public_Sans'] font-medium leading-[20px] text-[14px] text-[#70747d]">
+              {message.length}/80
             </div>
           </div>
         </div>
 
-        {/* Frame Debugger */}
-        {showDebugger && (
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <FrameDebugger />
-          </div>
-        )}
 
-        {/* Frame Selector */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <FrameSelector
-            selectedFrame={selectedFrame}
-            onFrameSelect={handleFrameSelect}
-            frameText={frameText}
-            onTextChange={handleTextChange}
-            textSettings={textSettings}
-            onTextSettingsChange={handleTextSettingsChange}
-          />
+
+        {/* Template Selection */}
+        <div className="flex flex-col gap-4 items-center w-full flex-1">
+          <div className="font-['Space_Grotesk'] font-bold leading-[32px] text-[#585d68] text-[28px] text-center tracking-[-0.56px]">
+            Choose Your Template
+          </div>
+          <div className="flex-1 w-full">
+            {/* Template Grid */}
+            <div className="grid grid-cols-2 gap-4 w-full h-full">
+              {frameTemplates.slice(0, 4).map((template) => (
+                <div
+                  key={template.id}
+                  onClick={() => handleFrameSelect(template)}
+                  className={`aspect-square bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
+                    selectedFrame?.id === template.id
+                      ? 'ring-4 ring-blue-500 scale-105'
+                      : 'hover:scale-102'
+                  }`}
+                  style={{ backgroundImage: `url('${template.frameImage}')` }}
+                >
+                  {/* Template preview content can go here */}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
-          <Button
+        {/* Next Button */}
+        <div className="w-full">
+          <button
             onClick={handleNext}
-            size="lg"
-            className="w-full h-12 text-lg"
+            disabled={!message.trim()}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center px-6 py-4 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
-            Next: Add Stickers →
-          </Button>
-
-          <Button
-            onClick={handleBack}
-            size="lg"
-            variant="outline"
-            className="w-full h-12 text-lg"
-          >
-            ← Back
-          </Button>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="px-6 pb-4">
-          <div className="flex space-x-2">
-            <div className="flex-1 h-2 bg-blue-500 rounded"></div>
-            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-            <span>Frame & Text</span>
-            <span>Stickers</span>
-          </div>
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[24px] text-center">
+              Next
+            </div>
+          </button>
         </div>
       </div>
     </div>

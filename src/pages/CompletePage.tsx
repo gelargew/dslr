@@ -32,69 +32,38 @@ export default function CompletePage() {
   };
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
-      <div className="text-center space-y-8 max-w-2xl px-8">
-        {/* Success Icon */}
-        <div className="text-8xl animate-bounce">
-          🎊
-        </div>
-
-        {/* Main Message */}
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-gray-900 dark:text-white font-tomorrow">
-            Amazing Work!
-          </h1>
-          <h2 className="text-3xl font-semibold text-purple-600 dark:text-purple-400">
-            Your edited photo is saved
-          </h2>
-        </div>
-
-        {/* Description */}
-        <div className="space-y-4 text-lg text-gray-600 dark:text-gray-300">
-          <p>
-            Your beautifully edited photo has been processed and saved successfully.
-          </p>
-          <p>
-            Thank you for creating something special with our photobooth!
-          </p>
-        </div>
-
-        {/* Countdown */}
-        <div className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-6 shadow-lg">
-          <div className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
-            Returning to start in
+    <div
+      className="bg-[#fefcfc] relative size-full"
+      style={{
+        backgroundImage: "url('data:image/svg+xml;utf8,<svg viewBox=\\'0 0 1680 905\\' xmlns=\\'http://www.w3.org/2000/svg\\' preserveAspectRatio=\\'none\\'><rect x=\\'0\\' y=\\'0\\' height=\\'100%\\' width=\\'100%\\' fill=\\'url(%23grad)\\' opacity=\\'1\\'/><defs><radialGradient id=\\'grad\\' gradientUnits=\\'userSpaceOnUse\\' cx=\\'0\\' cy=\\'0\\' r=\\'10\\' gradientTransform=\\'matrix(158.87 -9.5359 17.702 85.58 -24.242 891.94)\\'><stop stop-color=\\'rgba(184,186,190,1)\\' offset=\\'0\\'/><stop stop-color=\\'rgba(231,232,233,1)\\' offset=\\'1\\'/></radialGradient></defs></svg>')"
+      }}
+    >
+      <div
+        className="absolute bg-[#fefcfc] box-border content-stretch flex flex-col gap-16 items-center justify-center overflow-clip p-32 rounded-[32px] shadow-[32px_32px_64px_0px_rgba(0,0,0,0.04)] translate-x-[-50%] translate-y-[-50%]"
+        style={{
+          top: "calc(50% + 0.5px)",
+          left: "calc(50% + 0.5px)",
+          width: "1117px",
+          height: "682px"
+        }}
+      >
+        {/* Thank You Message */}
+        <div className="box-border content-stretch flex flex-col gap-8 items-center justify-start p-0 w-full">
+          <div className="font-['Space_Grotesk'] font-bold leading-[72px] text-[#585d68] text-[64px] text-center tracking-[-1.28px] w-full">
+            <p className="block mb-0">Thank you!</p>
+            <p className="block">Your photo will appear soon on the videotron.</p>
           </div>
-          <div className="text-6xl font-bold text-purple-600 dark:text-purple-400 animate-pulse">
+        </div>
+
+        {/* Countdown Circle */}
+        <div className="bg-[#585d68] flex items-center justify-center opacity-70 px-32 py-8 rounded-[64px] shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)]">
+          <div className="font-['Public_Sans'] font-semibold leading-[54px] text-[#fefcfc] text-[36px] text-center">
             {countdown}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            seconds
-          </div>
         </div>
 
-        {/* Manual Return Button */}
-        <button
-          onClick={handleReturnNow}
-          className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline transition-colors duration-200"
-        >
-          Return to start now
-        </button>
-
-        {/* Fun elements */}
-        <div className="flex justify-center space-x-4 text-4xl">
-          <span className="animate-pulse">🎨</span>
-          <span className="animate-pulse delay-100">✨</span>
-          <span className="animate-pulse delay-200">🖼️</span>
-          <span className="animate-pulse delay-300">🎭</span>
-        </div>
-      </div>
-
-      {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-20 left-20 text-6xl opacity-20 animate-spin-slow">🎪</div>
-        <div className="absolute top-40 right-32 text-4xl opacity-30 animate-bounce">🎨</div>
-        <div className="absolute bottom-32 left-40 text-5xl opacity-25 animate-pulse">✨</div>
-        <div className="absolute bottom-20 right-20 text-4xl opacity-20 animate-spin-slow">🖼️</div>
+        {/* Container shadow */}
+        <div className="absolute inset-0 pointer-events-none shadow-[-32px_-32px_64px_0px_inset_rgba(0,0,0,0.04)]" />
       </div>
     </div>
   );

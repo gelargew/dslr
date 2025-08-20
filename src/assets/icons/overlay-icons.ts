@@ -26,7 +26,7 @@ export const overlayIcons: OverlayIcon[] = [
     iconPath: '/assets/icons/plabs.png',
     iconType: 'png',
     defaultSize: 80,
-    defaultPosition: { x: 800, y: 24 },
+    defaultPosition: { x: 970, y: 200 },
   },
 
   // Stiker category
@@ -37,7 +37,7 @@ export const overlayIcons: OverlayIcon[] = [
     iconPath: '/assets/icons/heart.png',
     iconType: 'png',
     defaultSize: 64,
-    defaultPosition: { x: 200, y: 320 },
+    defaultPosition: { x: 200, y: 400 },
   },
   {
     id: 'star',
@@ -45,8 +45,8 @@ export const overlayIcons: OverlayIcon[] = [
     category: 'Stiker',
     iconPath: '/assets/icons/star.png',
     iconType: 'png',
-    defaultSize: 60,
-    defaultPosition: { x: 600, y: 420 },
+    defaultSize: 100,
+    defaultPosition: { x: 840, y: 480 },
   },
   {
     id: 'sparkle',
@@ -54,8 +54,8 @@ export const overlayIcons: OverlayIcon[] = [
     category: 'Stiker',
     iconPath: '/assets/icons/sparkle.png',
     iconType: 'png',
-    defaultSize: 55,
-    defaultPosition: { x: 540, y: 280 },
+    defaultSize: 100,
+    defaultPosition: { x: 620, y: 260 },
   },
 
   // Mood category
@@ -65,8 +65,8 @@ export const overlayIcons: OverlayIcon[] = [
     category: 'Mood',
     iconPath: '/assets/icons/sun.png',
     iconType: 'png',
-    defaultSize: 65,
-    defaultPosition: { x: 200, y: 280 },
+    defaultSize: 100,
+    defaultPosition: { x: 200, y: 220 },
   },
   {
     id: 'moon',
@@ -74,8 +74,8 @@ export const overlayIcons: OverlayIcon[] = [
     category: 'Mood',
     iconPath: '/assets/icons/moon.png',
     iconType: 'png',
-    defaultSize: 60,
-    defaultPosition: { x: 600, y: 260 },
+    defaultSize: 100,
+    defaultPosition: { x: 800, y: 280 },
   },
 ];
 

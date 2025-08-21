@@ -121,14 +121,24 @@ const mockStorageAPI = {
 
 // Mock camera API
 const mockCameraAPI = {
-  async getDevices() {
-    return [
-      { id: 'mock-camera-1', label: 'Mock Camera', kind: 'videoinput' as const }
-    ];
+  async getPermissions() {
+    console.log('🎭 Mock: Checking camera permissions');
+    // In development, simulate that we don't have permissions initially
+    return {
+      success: true,
+      hasPermission: false,
+      status: 'not-determined'
+    };
   },
 
-  async getPermissions(): Promise<boolean> {
-    return true;
+  async requestPermissions() {
+    console.log('🎭 Mock: Requesting camera permissions');
+    // Simulate permission request - in development, always grant
+    return {
+      success: true,
+      hasPermission: true,
+      status: 'granted'
+    };
   },
 
   async capturePhoto(deviceId?: string): Promise<string> {
@@ -162,11 +172,18 @@ const mockCameraAPI = {
 // Setup mock APIs in development
 export function setupMockIPC() {
   if (typeof window !== 'undefined') {
-    // Only setup in browser environment
-    (window as any).storageAPI = mockStorageAPI;
-    (window as any).cameraAPI = mockCameraAPI;
+    // Only setup in browser environment and if real APIs aren't available
+    if (!(window as any).storageAPI) {
+      (window as any).storageAPI = mockStorageAPI;
+      console.log('Mock storageAPI initialized for development');
+    }
 
-    console.log('Mock IPC APIs initialized for development');
+    if (!(window as any).cameraAPI) {
+      (window as any).cameraAPI = mockCameraAPI;
+      console.log('Mock cameraAPI initialized for development');
+    } else {
+      console.log('Real cameraAPI detected, skipping mock');
+    }
   }
 }
 

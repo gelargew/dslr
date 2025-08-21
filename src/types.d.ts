@@ -81,9 +81,34 @@ interface StorageAPI {
 }
 
 interface CameraAPI {
-  getDevices(): Promise<CameraDevice[]>;
-  getPermissions(): Promise<boolean>;
-  capturePhoto(deviceId?: string): Promise<string>;
+  getPermissions(): Promise<{
+    success: boolean;
+    hasPermission: boolean;
+    status?: string;
+    error?: string;
+  }>;
+  requestPermissions(): Promise<{
+    success: boolean;
+    hasPermission: boolean;
+    status?: string;
+    error?: string;
+  }>;
+}
+
+interface PhotoDatabaseAPI {
+  testConnection(): Promise<{ success: boolean; connected?: boolean; error?: string }>;
+  savePhoto(photoData: any): Promise<{ success: boolean; photo?: any; error?: string }>;
+  getPhotos(limit?: number): Promise<{ success: boolean; photos?: any[]; error?: string }>;
+  deletePhoto(photoId: string): Promise<{ success: boolean; error?: string }>;
+  getPhotoCount(): Promise<{ success: boolean; count?: number; error?: string }>;
+  runMigration(): Promise<{ success: boolean; error?: string }>;
+}
+
+interface GCSStorageAPI {
+  uploadPhoto(photoData: string, filename?: string): Promise<{ success: boolean; result?: any; error?: string }>;
+  uploadThumbnail(photoData: string, filename?: string): Promise<{ success: boolean; result?: any; error?: string }>;
+  deletePhoto(gcsPath: string): Promise<{ success: boolean; error?: string }>;
+  testConnection(): Promise<{ success: boolean; connected?: boolean; error?: string }>;
 }
 
 declare interface Window {
@@ -91,4 +116,6 @@ declare interface Window {
   electronWindow: ElectronWindow;
   storageAPI: StorageAPI;
   cameraAPI: CameraAPI;
+  photoDatabase: PhotoDatabaseAPI;
+  gcsStorage: GCSStorageAPI;
 }

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { PhotoGrid } from '@/components/videotron/PhotoGrid';
-import { NewPhotoAnimation } from '@/components/videotron/NewPhotoAnimation';
+import backgroundImage from '/background.png';
 
-// Mock data for development - replace with actual database calls
-const generateMockPhotos = (count: number): string[] => {
+// Fallback sample photos for when database is empty
+const generateSamplePhotos = (count: number): string[] => {
   const photos: string[] = [];
   for (let i = 1; i <= count; i++) {
-    // For now, using placeholder images - these will be replaced with actual captured photos
     photos.push(`https://picsum.photos/400/400?random=${i}`);
   }
   return photos;
@@ -15,70 +14,60 @@ const generateMockPhotos = (count: number): string[] => {
 export default function GalleryPage() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newPhoto, setNewPhoto] = useState<string | null>(null);
-  const [showNewPhotoAnimation, setShowNewPhotoAnimation] = useState(false);
 
+  // Load photos from database
+  const loadPhotos = async () => {
+    try {
+      console.log('📥 Fetching photos from database...');
+
+      // Check if photoDatabase is available
+      if (!window.photoDatabase) {
+        console.error('PhotoDatabase not available on window object');
+        return;
+      }
+
+      const result = await window.photoDatabase.getPhotos(40);
+
+      if (result?.success && result.photos) {
+        // Use gcs_url (for uploaded photos) or filename (for local photos) as fallback
+        const photoUrls = result.photos.map(record =>
+          record.gcs_url || record.thumbnail_url || record.filename
+        ).filter(Boolean); // Remove any null/undefined values
+        console.log(`📸 Loaded ${photoUrls.length} photos`);
+
+        setPhotos(photoUrls);
+      } else {
+        console.warn('No photos found or database error:', result?.error);
+        // If no photos in database, use sample photos for demo
+        console.log('Using sample photos for demo...');
+        const samplePhotos = generateSamplePhotos(15);
+        setPhotos(samplePhotos);
+      }
+    } catch (error) {
+      console.error('Failed to load photos:', error);
+      console.error('Error details:', error);
+      setPhotos([]);
+    }
+  };
+
+  // Initial load
   useEffect(() => {
-    // TODO: Replace with actual database call
-    // const loadPhotos = async () => {
-    //   try {
-    //     const photoRecords = await window.database?.getRecentPhotos(40);
-    //     const photoUrls = photoRecords?.map(record => record.file_path) || [];
-    //     setPhotos(photoUrls);
-    //   } catch (error) {
-    //     console.error('Failed to load photos:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
-
-    // For development, use mock data
-    const loadMockPhotos = () => {
-      setTimeout(() => {
-        const mockPhotos = generateMockPhotos(25); // Generate 25 sample photos
-        setPhotos(mockPhotos);
-        setIsLoading(false);
-      }, 1000); // Simulate loading time
+    const initialLoad = async () => {
+      await loadPhotos();
+      setIsLoading(false);
     };
 
-    loadMockPhotos();
+    initialLoad();
   }, []);
 
+  // Set up real-time photo updates every 5 seconds
   useEffect(() => {
-    // TODO: Set up real-time photo updates
-    // const interval = setInterval(async () => {
-    //   try {
-    //     const newPhotos = await window.database?.getRecentPhotos(40);
-    //     const photoUrls = newPhotos?.map(record => record.file_path) || [];
-    //
-    //     // Check if there's a new photo
-    //     if (photoUrls.length > photos.length && photoUrls.length > 0) {
-    //       const latestPhoto = photoUrls[0];
-    //       setNewPhoto(latestPhoto);
-    //       setShowNewPhotoAnimation(true);
-    //     }
-    //
-    //     setPhotos(photoUrls);
-    //   } catch (error) {
-    //     console.error('Failed to refresh photos:', error);
-    //   }
-    // }, 5000); // Check for new photos every 5 seconds
-
-    // For development, simulate a new photo every 15 seconds
-    const interval = setInterval(() => {
-      if (photos.length > 0) {
-        const randomIndex = Math.floor(Math.random() * 1000) + 100;
-        const newPhotoUrl = `https://picsum.photos/400/400?random=${randomIndex}`;
-        setNewPhoto(newPhotoUrl);
-        setShowNewPhotoAnimation(true);
-
-        // Add the new photo to the beginning of the array
-        setPhotos(prev => [newPhotoUrl, ...prev.slice(0, 39)]);
-      }
-    }, 15000);
+    const interval = setInterval(async () => {
+      await loadPhotos();
+    }, 5000); // Check for new photos every 5 seconds
 
     return () => clearInterval(interval);
-  }, [photos.length]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -91,27 +80,14 @@ export default function GalleryPage() {
     );
   }
 
-  const handleNewPhotoAnimationComplete = () => {
-    setShowNewPhotoAnimation(false);
-    setNewPhoto(null);
-  };
-
   return (
-    <div className="h-screen w-full bg-black relative">
+    <div className="h-screen w-full bg-black">
+      <img src={backgroundImage} alt="bg" className="absolute top-0 left-0 w-full h-full object-cover" />
       <PhotoGrid
         photos={photos}
         maxPhotos={40}
         className="h-full w-full"
       />
-
-      {/* New Photo Animation Overlay */}
-      {showNewPhotoAnimation && newPhoto && (
-        <NewPhotoAnimation
-          photoUrl={newPhoto}
-          onAnimationComplete={handleNewPhotoAnimationComplete}
-          duration={5000}
-        />
-      )}
     </div>
   );
 }

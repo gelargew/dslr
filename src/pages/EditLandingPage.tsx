@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhotoContext } from "@/contexts/PhotoContext";
+import { getEditLandingDuration } from "@/config/photobooth-config";
 
 export default function EditLandingPage() {
   const navigate = useNavigate();
   const { currentPhoto } = usePhotoContext();
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(getEditLandingDuration());
   const [showGreatShot, setShowGreatShot] = useState(false);
 
   // Countdown logic

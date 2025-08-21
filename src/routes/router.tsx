@@ -7,7 +7,13 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Use memory history for Electron apps - starts at root path
 const history = createMemoryHistory({
-  initialEntries: ["/"],
+  initialEntries: ['/'], // Start at homepage
 });
-export const router = createRouter({ routeTree: rootTree, history: history });
+
+export const router = createRouter({
+  routeTree: rootTree,
+  history: history,
+  defaultPreload: 'intent',
+});

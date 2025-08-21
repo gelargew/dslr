@@ -1,12 +1,12 @@
 import { app, BrowserWindow } from "electron";
 import registerListeners from "./helpers/ipc/listeners-register";
+import { registerDatabaseHandlers } from "./helpers/ipc/database/database-main";
+import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
+import { registerCameraHandlers } from "./helpers/ipc/camera/camera-main";
 // "electron-squirrel-startup" seems broken when packaging with vite
 //import started from "electron-squirrel-startup";
 import path from "path";
-import {
-  installExtension,
-  REACT_DEVELOPER_TOOLS,
-} from "electron-devtools-installer";
+// Dynamic import for dev tools - only in development
 
 const inDevelopment = process.env.NODE_ENV === "development";
 
@@ -24,7 +24,19 @@ function createWindow() {
     },
     titleBarStyle: "hidden",
   });
-  registerListeners(mainWindow);
+    registerListeners(mainWindow);
+
+    // Register database handlers
+  registerDatabaseHandlers();
+
+  // Register storage handlers
+  registerStorageHandlers();
+
+  // Register camera handlers
+  registerCameraHandlers();
+
+  // Initialize database after handlers are registered
+  console.log('🔌 Initializing Turso database...');
 
   // Auto-open dev tools in development
   if (inDevelopment) {
@@ -54,11 +66,19 @@ function createWindow() {
 }
 
 async function installExtensions() {
+  // Only install extensions in development
+  if (!inDevelopment) {
+    console.log('Production mode: Skipping dev tools installation');
+    return;
+  }
+
   try {
+    // Dynamic import to avoid bundling in production
+    const { installExtension, REACT_DEVELOPER_TOOLS } = await import("electron-devtools-installer");
     const result = await installExtension(REACT_DEVELOPER_TOOLS);
     console.log(`Extensions installed successfully: ${result.name}`);
-  } catch {
-    console.error("Failed to install extensions");
+  } catch (error) {
+    console.error("Failed to install extensions:", error.message);
   }
 }
 

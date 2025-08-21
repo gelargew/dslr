@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhotoContext } from "@/contexts/PhotoContext";
+import { getThankYouDuration } from "@/config/photobooth-config";
 
 export default function CompletePage() {
   const navigate = useNavigate();
   const { clearCurrentPhoto, clearCurrentEdit } = usePhotoContext();
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(getThankYouDuration());
 
   useEffect(() => {
     // Auto-navigate after 10 seconds

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhotoContext } from "@/contexts/PhotoContext";
+import { getCountdownDuration } from "@/config/photobooth-config";
 
 export default function CountdownPage() {
   const navigate = useNavigate();
   const { capturePhoto } = usePhotoContext();
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(getCountdownDuration());
   const [isCapturing, setIsCapturing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

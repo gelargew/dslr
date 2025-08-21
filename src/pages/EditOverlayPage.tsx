@@ -3,19 +3,107 @@ import { useNavigate } from "@tanstack/react-router";
 import { usePhotoContext } from "@/contexts/PhotoContext";
 import { useEditContext } from "@/contexts/EditContext";
 import { overlayIcons, createDefaultIconOverlay } from "@/assets/icons/overlay-icons";
+import { shouldUploadToGCS, shouldCreateThumbnails } from "@/config/photobooth-config";
 
 export default function EditOverlayPage() {
   const navigate = useNavigate();
-  const { currentPhoto } = usePhotoContext();
+  const { currentPhoto, generateFinalPhoto } = usePhotoContext();
   const { editState, addOverlay, removeOverlay } = useEditContext();
   const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const handleBack = () => {
     navigate({ to: "/edit/photo" });
   };
 
-  const handleFinish = () => {
-    navigate({ to: "/complete" });
+  const handleFinish = async () => {
+    if (!currentPhoto) {
+      console.error('No current photo to save');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      console.log('🎨 Generating final photo with edits...');
+      console.log('📸 Current photo:', currentPhoto.id);
+      console.log('🖼️ Edit state:', editState);
+
+      // Prepare edit data from current edit state
+      const editData = {
+        photoId: currentPhoto.id,
+        frameTemplateId: editState.selectedFrame?.id || undefined,
+        frameText: editState.frameText || undefined,
+        textSettings: editState.selectedFrame?.style?.textSettings || undefined,
+        overlays: editState.overlays || [],
+      };
+
+      console.log('💾 Saving edit data:', editData);
+
+            // Generate and save the final photo
+      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
+
+      console.log('✅ Final photo generated and saved!');
+
+      // Upload to Google Cloud Storage
+      console.log('☁️ Uploading to Google Cloud Storage...');
+      const gcsResult = await window.gcsStorage.uploadPhoto(
+        finalPhotoData,
+        `final-${currentPhoto.id}-${Date.now()}.jpg`
+      );
+
+      let gcsUrl = null;
+      let thumbnailUrl = null;
+
+      if (gcsResult.success) {
+        gcsUrl = gcsResult.result.publicUrl;
+        console.log('✅ Photo uploaded to GCS:', gcsUrl);
+
+        // Also create and upload thumbnail (smaller version for gallery)
+        try {
+          const thumbnailResult = await window.gcsStorage.uploadThumbnail(
+            finalPhotoData,
+            `final-${currentPhoto.id}-${Date.now()}.jpg`
+          );
+
+          if (thumbnailResult.success) {
+            thumbnailUrl = thumbnailResult.result.publicUrl;
+            console.log('✅ Thumbnail uploaded to GCS:', thumbnailUrl);
+          }
+        } catch (thumbError) {
+          console.error('⚠️ Thumbnail upload failed (continuing anyway):', thumbError);
+        }
+      } else {
+        console.error('❌ GCS upload failed:', gcsResult.error);
+      }
+
+      // Save to Turso database for videotron access
+      const tursoResult = await window.photoDatabase.savePhoto({
+        filename: `final-${currentPhoto.id}-${Date.now()}.jpg`,
+        gcs_url: gcsUrl,
+        thumbnail_url: thumbnailUrl,
+        original_photo_id: currentPhoto.id,
+        frame_template_id: editData.frameTemplateId,
+        frame_text: editData.frameText,
+        text_settings: editData.textSettings,
+        overlays: editData.overlays,
+      });
+
+      if (tursoResult.success) {
+        console.log('✅ Photo saved to Turso:', tursoResult.photo);
+      } else {
+        console.error('❌ Failed to save to Turso:', tursoResult.error);
+      }
+
+      // Navigate to completion page
+      navigate({ to: "/complete" });
+    } catch (error) {
+      console.error('❌ Error saving final photo:', error);
+      // Still navigate to show user completion, but log the error
+      navigate({ to: "/complete" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleNoOverlay = () => {
@@ -290,10 +378,11 @@ export default function EditOverlayPage() {
           </button>
           <button
             onClick={handleFinish}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+            disabled={isSaving}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
             <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
-              Finish
+              {isSaving ? 'Saving...' : 'Finish'}
             </div>
           </button>
         </div>

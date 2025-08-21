@@ -17,6 +17,7 @@ import EditOverlayPage from "@/pages/EditOverlayPage";
 import CompletePage from "@/pages/CompletePage";
 import DebugPage from "@/pages/DebugPage";
 import GalleryPage from "@/pages/GalleryPage";
+import TursoTestPage from "@/pages/TursoTestPage";
 
 // Legacy routes (can be removed later)
 export const HomeRoute = createRoute({
@@ -106,6 +107,13 @@ export const GalleryRoute = createRoute({
   component: GalleryPage,
 });
 
+// Test route for Turso
+export const TursoTestRoute = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/turso-test",
+  component: TursoTestPage,
+});
+
 export const rootTree = RootRoute.addChildren([
   // Photobooth routes (main flow)
   HomeMainRoute, // Main entry point
@@ -124,6 +132,9 @@ export const rootTree = RootRoute.addChildren([
 
   // Videotron routes
   GalleryRoute,
+
+  // Test routes
+  TursoTestRoute,
 
   // Legacy routes (for testing/development)
   HomeRoute,

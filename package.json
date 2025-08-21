@@ -1,8 +1,8 @@
 {
-  "name": "electron-shadcn",
-  "productName": "electron-shadcn Template",
+  "name": "photobooth",
+  "productName": "Photobooth",
   "version": "1.0.0",
-  "description": "Electron Forge with shadcn-ui (Vite + Typescript)",
+  "description": "Interactive Photobooth Application",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
@@ -63,7 +63,9 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.17.0",
     "@icons-pack/react-simple-icons": "^13.7.0",
+    "@libsql/client": "^0.15.12",
     "@radix-ui/react-navigation-menu": "^1.2.13",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toggle": "^1.1.9",

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { usePhotoContext } from "@/contexts/PhotoContext";
 import { useEditContext } from "@/contexts/EditContext";
 import { FrameTemplate, frameTemplates } from "@/assets/frames/frame-templates";
@@ -85,9 +84,12 @@ export default function EditPhotoPage() {
         <div className="text-center text-white space-y-4">
           <h2 className="text-2xl font-bold text-red-400">No Photo Found</h2>
           <p className="text-lg">Please take a photo first.</p>
-          <Button onClick={() => navigate({ to: "/camera" })} size="lg">
+          <button
+            onClick={() => navigate({ to: "/camera" })}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
             Take Photo
-          </Button>
+          </button>
         </div>
       </div>
     );

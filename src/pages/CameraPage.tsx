@@ -25,9 +25,34 @@ export default function CameraPage() {
     };
   }, []);
 
-  const initializeCamera = async () => {
+    const initializeCamera = async () => {
     try {
-      // Request camera access - prefer square or high resolution
+      // First, check/request camera permissions through Electron IPC
+      if (window.cameraAPI) {
+        console.log('🔍 Checking camera permissions via Electron...');
+        let permissionResult = await window.cameraAPI.getPermissions();
+        console.log('📊 Permission check result:', permissionResult);
+
+        if (!permissionResult.success || !permissionResult.hasPermission) {
+          console.log('📱 Requesting camera permissions via Electron...');
+          permissionResult = await window.cameraAPI.requestPermissions();
+          console.log('📊 Permission request result:', permissionResult);
+
+          if (!permissionResult.success || !permissionResult.hasPermission) {
+            console.error('❌ Electron camera permission denied:', permissionResult);
+            // Don't return here - try WebRTC anyway as fallback
+          }
+        }
+
+        if (permissionResult.hasPermission) {
+          console.log('✅ Electron camera permissions granted');
+        }
+      } else {
+        console.log('⚠️ Camera API not available, trying direct WebRTC...');
+      }
+
+      // Now request camera access through WebRTC (this will trigger browser permission)
+      console.log('🌐 Requesting camera access via WebRTC...');
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1080 },
@@ -37,6 +62,7 @@ export default function CameraPage() {
         audio: false
       });
 
+      console.log('✅ WebRTC camera access granted');
       setStream(mediaStream);
       setHasPermission(true);
 
@@ -45,8 +71,20 @@ export default function CameraPage() {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err) {
-      console.error('Camera access error:', err);
-      setError('Camera access denied. Please allow camera access and refresh the page.');
+      console.error('❌ Camera access error:', err);
+      let errorMessage = 'Camera access denied. ';
+
+      if (err.name === 'NotAllowedError') {
+        errorMessage += 'Please allow camera access in both system settings and when prompted by the app.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage += 'No camera device found.';
+      } else if (err.name === 'NotReadableError') {
+        errorMessage += 'Camera is already in use by another application.';
+      } else {
+        errorMessage += `Error: ${err.message}`;
+      }
+
+      setError(errorMessage);
       setHasPermission(false);
     }
   };

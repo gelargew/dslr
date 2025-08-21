@@ -5,11 +5,29 @@ import { MakerDeb } from "@electron-forge/maker-deb";
 import { MakerRpm } from "@electron-forge/maker-rpm";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
+import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    appBundleId: "com.photobooth.app",
+    name: "Photobooth",
+    appCategoryType: "public.app-category.photography",
+    extendInfo: {
+      NSCameraUsageDescription: "This photobooth application needs camera access to capture photos and enable the photobooth experience.",
+      NSMicrophoneUsageDescription: "This application may need microphone access for video recording features.",
+      "com.apple.security.device.camera": true,
+      "com.apple.security.device.audio-input": true,
+    },
+    hardenedRuntime: false,
+    // osxSign: {
+    //   identity: "Developer ID Application",
+    //   "hardened-runtime": true,
+    //   entitlements: "entitlements.plist",
+    //   "entitlements-inherit": "entitlements.plist",
+    //   "signature-flags": "library"
+    // },
   },
   rebuildConfig: {},
   makers: [
@@ -19,6 +37,8 @@ const config: ForgeConfig = {
     new MakerDeb({}),
   ],
   plugins: [
+    new AutoUnpackNativesPlugin({}),
+
     new VitePlugin({
       build: [
         {

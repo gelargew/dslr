@@ -39,7 +39,8 @@ export function setupLogCapture() {
         id: uuidv4(),
         timestamp: new Date().toISOString(),
         level,
-        message: typeof message === 'string' ? message : JSON.stringify(message, null, 2)
+        message: typeof message === 'string' ? message : JSON.stringify(message, null, 2),
+        source: 'server'
       };
 
       mainWindow.webContents.send('log-message', logEntry);

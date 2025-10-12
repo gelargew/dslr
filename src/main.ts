@@ -5,6 +5,7 @@ import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
 import { registerConfigHandlers } from "./helpers/ipc/config/config-main";
 import { registerDigicamHandlers, setDigicamMainWindow, setupFileWatcher, setupExpressServer } from "./helpers/ipc/digicam/digicam-main";
 import { registerFileHandlers } from "./helpers/ipc/file/file-main";
+import { registerDebuggerHandlers, setDebuggerMainWindow, setupLogCapture } from "./helpers/ipc/debugger/debugger-main";
 import started from "electron-squirrel-startup";
 import path from "path";
 import { spawn } from "child_process";
@@ -108,6 +109,9 @@ function createWindow() {
   // Set window reference for DigiCamControl notifications
   setDigicamMainWindow(mainWindow);
 
+  // Set window reference for debugger
+  setDebuggerMainWindow(mainWindow);
+
   registerListeners(mainWindow);
 
     // Register database handlers
@@ -122,6 +126,8 @@ function createWindow() {
   // Register file handlers for local file access
   registerFileHandlers();
 
+  // Register debugger handlers
+  registerDebuggerHandlers();
 
   // Register DigiCamControl handlers
   registerDigicamHandlers();
@@ -129,6 +135,9 @@ function createWindow() {
   // Set up DigiCamControl file watcher and Express server
   setupFileWatcher();
   setupExpressServer();
+
+  // Set up log capture for debugger
+  setupLogCapture();
 
   // Set up permission handler for media devices
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback, details) => {

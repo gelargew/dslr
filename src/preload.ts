@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNewImage: (callback: (data: { original: string; processed: string }) => void) => {
     ipcRenderer.on('new-image', (_, data) => callback(data));
   },
+  onLogMessage: (callback: (data: { id: string; timestamp: string; level: string; message: string }) => void) => {
+    ipcRenderer.on('log-message', (_, data) => callback(data));
+  },
   removeAllListeners: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);
   }

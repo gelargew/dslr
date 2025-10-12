@@ -11,28 +11,28 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    appBundleId: "com.photobooth.app",
-    name: "Photobooth",
+    appBundleId: "com.textimoni.photobooth",
+    name: "Textimoni Photobooth",
     appCategoryType: "public.app-category.photography",
       // Remove CSP configuration as shown in working example
     // contentSecurityPolicy: false, // Disable CSP entirely as shown in working example
     extendInfo: {
-      NSCameraUsageDescription: "This photobooth application needs camera access to capture photos and enable the photobooth experience.",
+      NSCameraUsageDescription: "This Textimoni Photobooth application needs camera access to capture photos and enable the photobooth experience.",
       NSMicrophoneUsageDescription: "This application may need microphone access for video recording features.",
       "com.apple.security.device.camera": true,
       "com.apple.security.device.audio-input": true,
     },
     // Windows-specific permissions
     win32metadata: {
-      CompanyName: "Photobooth App",
-      FileDescription: "Photobooth - Interactive Photo Application",
-      InternalName: "photobooth.exe",
-      OriginalFilename: "photobooth.exe",
-      ProductName: "Photobooth",
+      CompanyName: "Textimoni",
+      FileDescription: "Textimoni Photobooth - Interactive Photo Application",
+      InternalName: "textimoni-photobooth.exe",
+      OriginalFilename: "textimoni-photobooth.exe",
+      ProductName: "Textimoni Photobooth",
       ProductVersion: "1.0.0",
       "requested-execution-level": "asInvoker",
       FileVersion: "1.0.0",
-      LegalCopyright: "Copyright © 2025 Photobooth App"
+      LegalCopyright: "Copyright © 2025 Textimoni"
     },
     hardenedRuntime: false,
     // osxSign: {
@@ -47,8 +47,8 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({
       // Windows Squirrel installer configuration
-      setupExe: "photobooth-setup.exe",
-      name: "photobooth",
+      setupExe: "textimoni-photobooth-setup.exe",
+      name: "textimoni-photobooth",
       // Note: setupIcon requires .ico format - will add later when available
       // loadingGif: "public/start.png", // Remove for now as it may also cause issues
     }),

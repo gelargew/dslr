@@ -1,4 +1,4 @@
-// Photobooth Application Configuration
+// Textimoni Photobooth Application Configuration
 export const CONFIG = {
   enableCountdown: true, // Set to false for 1-second countdown
 };

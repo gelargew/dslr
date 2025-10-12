@@ -208,7 +208,7 @@ export function setupExpressServer() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Photobooth Gallery</title>
+        <title>Textimoni Photobooth Gallery</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
           .header { text-align: center; margin-bottom: 30px; }
@@ -221,7 +221,7 @@ export function setupExpressServer() {
       </head>
       <body>
         <div class="header">
-          <h1>📸 Photobooth Gallery</h1>
+          <h1>📸 Textimoni Photobooth Gallery</h1>
           <div class="status">
             <strong>Server Status:</strong> Running<br>
             <strong>Photo Directory:</strong> ${WATCH_DIR}<br>

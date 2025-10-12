@@ -86,7 +86,7 @@ export default function CameraPage() {
 
   // Listen for new images from DigiCamControl
   useEffect(() => {
-    const handleNewImage = (data: { original: string; processed: string }) => {
+    const handleNewImage = async (data: { original: string; processed: string }) => {
       console.log('📸 New image received:', data);
       setLastImage(data.processed);
       setDccStatus('Photo captured successfully!');
@@ -185,7 +185,6 @@ export default function CameraPage() {
           navigate({ to: "/preview" });
         }, 2000);
       }
-    };
     };
 
     window.electronAPI.onNewImage(handleNewImage);

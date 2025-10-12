@@ -3,10 +3,10 @@
   <assemblyIdentity
     version="1.0.0.0"
     processorArchitecture="*"
-    name="Photobooth"
+    name="Textimoni.Photobooth"
     type="win32"
   />
-  <description>Photobooth Interactive Photo Application</description>
+  <description>Textimoni Photobooth Interactive Photo Application</description>
 
   <!-- Request administrator privileges -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">

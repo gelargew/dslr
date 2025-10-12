@@ -26,7 +26,7 @@ interface TextSettings {
   color: string;
 }
 
-// Photobooth types
+// Textimoni Photobooth types
 interface PhotoMetadata {
   frameTemplateId?: string;
   frameText?: string;

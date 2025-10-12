@@ -27,7 +27,7 @@ export default function HomePage() {
         <div className="font-bold leading-tight relative shrink-0 text-white text-4xl md:text-6xl text-center tracking-tight">
           <h1 className="leading-tight whitespace-pre">
             <span className="font-normal">Welcome to the</span>
-            <span className="font-bold"> Photobooth!</span>
+            <span className="font-bold"> Textimoni Photobooth!</span>
           </h1>
         </div>
 

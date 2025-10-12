@@ -6,8 +6,6 @@ import "./localization/i18n";
 import { updateAppLanguage } from "./helpers/language_helpers";
 import { router } from "./routes/router";
 import { RouterProvider } from "@tanstack/react-router";
-import { ConfigModalProvider } from "./contexts/ConfigModalContext";
-import ConfigModal from "./components/photobooth/ConfigModal/ConfigModal";
 
 // Import mock IPC for development
 import "./helpers/mock-ipc";
@@ -20,28 +18,7 @@ function AppWithProviders() {
     updateAppLanguage(i18n);
   }, [i18n]);
 
-  return (
-    <ConfigModalProvider>
-      <RouterProvider router={router} />
-      <GlobalConfigModal />
-    </ConfigModalProvider>
-  );
-}
-
-function GlobalConfigModal() {
-  try {
-    const { isOpen, close, config } = useConfigModalContext();
-    return (
-      <ConfigModal
-        isOpen={isOpen}
-        onClose={close}
-        initialConfig={config || undefined}
-      />
-    );
-  } catch (error) {
-    console.error('ConfigModal error:', error);
-    return null;
-  }
+  return <RouterProvider router={router} />;
 }
 
 export default function App() {

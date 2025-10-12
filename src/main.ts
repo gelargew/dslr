@@ -3,7 +3,6 @@ import registerListeners from "./helpers/ipc/listeners-register";
 import { registerDatabaseHandlers } from "./helpers/ipc/database/database-main";
 import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
 import { registerConfigHandlers } from "./helpers/ipc/config/config-main";
-import { registerModalHandlers } from "./helpers/ipc/modal/modal-main";
 import { registerDigicamHandlers, setDigicamMainWindow, setupFileWatcher, setupExpressServer } from "./helpers/ipc/digicam/digicam-main";
 // "electron-squirrel-startup" seems broken when packaging with vite
 //import started from "electron-squirrel-startup";
@@ -59,9 +58,7 @@ function createWindow() {
   // Register config handlers
   registerConfigHandlers();
 
-  // Register modal handlers
-  registerModalHandlers();
-
+  
   // Register DigiCamControl handlers
   registerDigicamHandlers();
 

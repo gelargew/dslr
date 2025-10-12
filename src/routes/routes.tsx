@@ -1,55 +1,21 @@
 import { createRoute } from "@tanstack/react-router";
 import { RootRoute } from "./__root";
 
-// Import existing pages
-import HomePage from "../pages/HomePage";
-import SecondPage from "@/pages/SecondPage";
-
 // Import photobooth pages
-import WelcomePage from "@/pages/WelcomePage";
+import HomePage from "../pages/HomePage";
 import CameraPage from "@/pages/CameraPage";
 import CountdownPage from "@/pages/CountdownPage";
 import PreviewPage from "@/pages/PreviewPage";
-import ThankYouPage from "@/pages/ThankYouPage";
 import EditLandingPage from "@/pages/EditLandingPage";
 import EditPhotoPage from "@/pages/EditPhotoPage";
 import EditOverlayPage from "@/pages/EditOverlayPage";
 import CompletePage from "@/pages/CompletePage";
-import DebugPage from "@/pages/DebugPage";
-import GalleryPage from "@/pages/GalleryPage";
-import TursoTestPage from "@/pages/TursoTestPage";
 
-// Legacy routes (can be removed later)
-export const HomeRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/home",
-  component: HomePage,
-});
-
-export const SecondPageRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/second-page",
-  component: SecondPage,
-});
-
-// Debug route
-export const DebugRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/debug",
-  component: DebugPage,
-});
-
-// Photobooth Routes - HomePage is now the main welcome screen
+// Photobooth Routes - HomePage is the main welcome screen
 export const HomeMainRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "/",
   component: HomePage,
-});
-
-export const WelcomeRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/welcome",
-  component: WelcomePage,
 });
 
 export const CameraRoute = createRoute({
@@ -68,12 +34,6 @@ export const PreviewRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "/preview",
   component: PreviewPage,
-});
-
-export const ThankYouRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/thank-you",
-  component: ThankYouPage,
 });
 
 export const EditLandingRoute = createRoute({
@@ -100,43 +60,14 @@ export const CompleteRoute = createRoute({
   component: CompletePage,
 });
 
-// Videotron Routes
-export const GalleryRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/gallery",
-  component: GalleryPage,
-});
-
-// Test route for Turso
-export const TursoTestRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/turso-test",
-  component: TursoTestPage,
-});
-
 export const rootTree = RootRoute.addChildren([
-  // Photobooth routes (main flow)
-  HomeMainRoute, // Main entry point
-  WelcomeRoute, // Alternative welcome page
-  CameraRoute,
-  CountdownRoute,
-  PreviewRoute,
-  ThankYouRoute,
-  EditLandingRoute,
-  EditPhotoRoute,
-  EditOverlayRoute,
-  CompleteRoute,
-
-  // Debug route
-  DebugRoute,
-
-  // Videotron routes
-  GalleryRoute,
-
-  // Test routes
-  TursoTestRoute,
-
-  // Legacy routes (for testing/development)
-  HomeRoute,
-  SecondPageRoute,
+  // Main photobooth flow
+  HomeMainRoute,    // Main entry point
+  CameraRoute,      // DSLR camera interface
+  CountdownRoute,   // Countdown before capture
+  PreviewRoute,     // Photo preview after capture
+  EditLandingRoute, // Edit flow entry
+  EditPhotoRoute,   // Photo editing
+  EditOverlayRoute, // Overlay editing
+  CompleteRoute,    // Final screen
 ]);

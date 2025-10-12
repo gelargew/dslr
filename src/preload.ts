@@ -50,4 +50,11 @@ contextBridge.exposeInMainWorld('electronWindow', {
   close: () => ipcRenderer.invoke('window:close'),
 });
 
+// File API for accessing local files
+contextBridge.exposeInMainWorld('fileAPI', {
+  readLocalFile: (filePath: string) => ipcRenderer.invoke('file:read-local-file', filePath),
+  fileExists: (filePath: string) => ipcRenderer.invoke('file:exists', filePath),
+  getPhotoPath: (filename: string) => ipcRenderer.invoke('file:get-photo-path', filename),
+});
+
 console.log('✅ All APIs exposed via context bridge');

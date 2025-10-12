@@ -19,6 +19,11 @@ declare global {
       baseUrl: string;
       captureUrl: string;
     };
+    fileAPI: {
+      readLocalFile: (filePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
+      fileExists: (filePath: string) => Promise<{ success: boolean; exists: boolean; error?: string }>;
+      getPhotoPath: (filename: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+    };
   }
 }
 
@@ -49,14 +54,75 @@ export default function CountdownPage() {
 
   // Listen for new images from DigiCamControl
   useEffect(() => {
-    const handleNewImage = (data: { original: string; processed: string }) => {
+    const handleNewImage = async (data: { original: string; processed: string }) => {
       console.log('📸 New image received in countdown:', data);
       setCaptureStatus('Photo captured successfully!');
 
-      // Convert the processed image to base64 for the photo context
-      const imageUrl = `http://localhost:3001/photos/${data.processed}`;
+      try {
+        // Get the full file path for the captured image
+        const pathResult = await window.fileAPI.getPhotoPath(data.processed);
+        if (!pathResult.success) {
+          console.error('❌ Failed to get photo path:', pathResult.error);
+          // Fallback to HTTP method
+          await loadImageViaHTTP(data.processed);
+          return;
+        }
 
-      // Create a temporary image element to convert to base64
+        // Read the file using the file API
+        const fileResult = await window.fileAPI.readLocalFile(pathResult.path);
+        if (!fileResult.success) {
+          console.error('❌ Failed to read image file:', fileResult.error);
+          // Fallback to HTTP method
+          await loadImageViaHTTP(data.processed);
+          return;
+        }
+
+        // Create an image element to convert to base64
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1080;
+          canvas.height = 1080;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            // Draw and crop to square
+            const size = Math.min(img.width, img.height);
+            const x = (img.width - size) / 2;
+            const y = (img.height - size) / 2;
+            ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
+
+            const base64 = canvas.toDataURL('image/jpeg', 0.9);
+            capturePhoto(base64);
+
+            // Navigate to preview page after successful capture
+            navigate({ to: "/preview" });
+          }
+        };
+        img.onerror = () => {
+          console.error('Failed to load captured image from file, falling back to HTTP');
+          // Fallback to HTTP method
+          loadImageViaHTTP(data.processed);
+        };
+
+        img.src = `data:image/jpeg;base64,${fileResult.data}`;
+      } catch (error) {
+        console.error('❌ Error processing captured image:', error);
+        // Fallback to HTTP method
+        await loadImageViaHTTP(data.processed);
+      }
+    };
+
+    window.electronAPI.onNewImage(handleNewImage);
+
+    return () => {
+      window.electronAPI.removeAllListeners('new-image');
+    };
+  }, [capturePhoto, navigate]);
+
+  // Fallback method: try HTTP method if file access fails
+  const loadImageViaHTTP = async (filename: string) => {
+    try {
+      const imageUrl = `http://localhost:3001/photos/${filename}`;
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -79,19 +145,21 @@ export default function CountdownPage() {
         }
       };
       img.onerror = () => {
-        console.error('Failed to load captured image');
-        // Even if capture fails, navigate to preview
-        navigate({ to: "/preview" });
+        console.error('Failed to load captured image via HTTP');
+        // Even if capture fails, navigate to preview after a delay
+        setTimeout(() => {
+          navigate({ to: "/preview" });
+        }, 2000);
       };
       img.src = imageUrl;
-    };
-
-    window.electronAPI.onNewImage(handleNewImage);
-
-    return () => {
-      window.electronAPI.removeAllListeners('new-image');
-    };
-  }, [capturePhoto, navigate]);
+    } catch (error) {
+      console.error('❌ Error loading image via HTTP:', error);
+      // Even if capture fails, navigate to preview after a delay
+      setTimeout(() => {
+        navigate({ to: "/preview" });
+      }, 2000);
+    }
+  };
 
   // 10fps live view refresh
   useEffect(() => {

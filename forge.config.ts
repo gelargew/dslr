@@ -35,12 +35,6 @@ const config: ForgeConfig = {
       LegalCopyright: "Copyright © 2025 Photobooth App"
     },
     hardenedRuntime: false,
-    // Ignore node_modules to reduce bundle size
-    ignore: [
-      /^\/src\//,
-      /^\/\.git/,
-      /^\/node_modules\/(?!(@libsql|@google-cloud|sharp))/,
-    ],
     // osxSign: {
     //   identity: "Developer ID Application",
     //   "hardened-runtime": true,

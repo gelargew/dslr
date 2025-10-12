@@ -7,7 +7,9 @@
       "Bash(npm install:*)",
       "Bash(curl:*)",
       "Bash(echo:*)",
-      "WebFetch(domain:digicamcontrol.com)"
+      "WebFetch(domain:digicamcontrol.com)",
+      "Bash(npm run make:*)",
+      "Bash(npm run package:*)"
     ],
     "deny": [],
     "ask": []

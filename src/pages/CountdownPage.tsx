@@ -11,6 +11,8 @@ declare global {
       capture: () => Promise<{ success: boolean; message?: string; error?: string }>;
       checkDccStatus: () => Promise<{ connected: boolean; message?: string; error?: string }>;
       downloadPhoto: (filename: string) => Promise<{ success: boolean; data?: string; error?: string; filename?: string }>;
+      startLiveView: () => Promise<{ success: boolean; message?: string; error?: string }>;
+      stopLiveView: () => Promise<{ success: boolean; message?: string; error?: string }>;
       onNewImage: (callback: (data: { original: string; processed: string }) => void) => void;
       removeAllListeners: (channel: string) => void;
     };
@@ -30,7 +32,7 @@ declare global {
 
 export default function CountdownPage() {
   const navigate = useNavigate();
-  const { capturePhoto } = usePhoto();
+  const { setCurrentPhoto } = usePhoto();
   const [countdown, setCountdown] = useState(getCountdownDuration());
   const [isCapturing, setIsCapturing] = useState(false);
   const [dccConnected, setDccConnected] = useState(false);
@@ -82,7 +84,24 @@ export default function CountdownPage() {
               ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
 
               const base64 = canvas.toDataURL('image/jpeg', 0.9);
-              capturePhoto(base64);
+              // Construct the DigiCamControl HTTP URL for the photo
+              const photoHttpUrl = `${window.dccConfig.baseUrl}/image/${data.processed}`;
+              console.log('🌐 Captured photo with HTTP URL:', photoHttpUrl);
+
+              // Store photo in Zustand store for PreviewPage
+              const photoRecord = {
+                id: `photo-${Date.now()}`,
+                filename: data.processed,
+                file_path: photoHttpUrl,
+                original_width: 1080,
+                original_height: 1080,
+                file_size: 0,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_edited: false,
+                is_deleted: false,
+              };
+              setCurrentPhoto(photoRecord);
 
               // Navigate to preview page after successful capture
               navigate({ to: "/preview" });
@@ -112,7 +131,7 @@ export default function CountdownPage() {
     return () => {
       window.electronAPI.removeAllListeners('new-image');
     };
-  }, [capturePhoto, navigate]);
+  }, [navigate]);
 
   // Fallback method: try file system if HTTP download fails (for development)
   const loadImageViaFileSystem = async (filename: string) => {
@@ -150,7 +169,24 @@ export default function CountdownPage() {
           ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
 
           const base64 = canvas.toDataURL('image/jpeg', 0.9);
-          capturePhoto(base64);
+          // Construct the DigiCamControl HTTP URL for the photo (file system fallback still uses same URL pattern)
+          const photoHttpUrl = `${window.dccConfig.baseUrl}/image/${filename}`;
+          console.log('🌐 Captured photo with HTTP URL (file system fallback):', photoHttpUrl);
+
+          // Store photo in Zustand store for PreviewPage
+          const photoRecord = {
+            id: `photo-${Date.now()}`,
+            filename: filename,
+            file_path: photoHttpUrl,
+            original_width: 1080,
+            original_height: 1080,
+            file_size: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_edited: false,
+            is_deleted: false,
+          };
+          setCurrentPhoto(photoRecord);
 
           // Navigate to preview page after successful capture
           navigate({ to: "/preview" });
@@ -189,7 +225,24 @@ export default function CountdownPage() {
           ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
 
           const base64 = canvas.toDataURL('image/jpeg', 0.9);
-          capturePhoto(base64);
+          // Construct the DigiCamControl HTTP URL for the photo (HTTP fallback still uses same URL pattern)
+          const photoHttpUrl = `${window.dccConfig.baseUrl}/image/${filename}`;
+          console.log('🌐 Captured photo with HTTP URL (HTTP fallback):', photoHttpUrl);
+
+          // Store photo in Zustand store for PreviewPage
+          const photoRecord = {
+            id: `photo-${Date.now()}`,
+            filename: filename,
+            file_path: photoHttpUrl,
+            original_width: 1080,
+            original_height: 1080,
+            file_size: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_edited: false,
+            is_deleted: false,
+          };
+          setCurrentPhoto(photoRecord);
 
           // Navigate to preview page after successful capture
           navigate({ to: "/preview" });

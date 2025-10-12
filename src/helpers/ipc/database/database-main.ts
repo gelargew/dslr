@@ -22,7 +22,17 @@ export function registerDatabaseHandlers() {
   ipcMain.handle(DATABASE_CHANNELS.SAVE_PHOTO, async (event, photoData) => {
     try {
       console.log('📤 IPC: Saving photo to database');
-      const savedPhoto = await photoDatabase.savePhoto(photoData);
+
+      // Extract HTTP URL from metadata if available
+      const httpUrl = photoData.metadata?.httpUrl;
+
+      // Prepare photo data for database with HTTP URL as file_path
+      const dbPhotoData = {
+        ...photoData,
+        file_path: httpUrl || `data:image/jpeg;base64,${photoData.photoData}`, // Use HTTP URL or fallback to base64
+      };
+
+      const savedPhoto = await photoDatabase.savePhoto(dbPhotoData);
 
       // Notify all windows about new photo (for videotron)
       // You can broadcast to other windows here if needed

@@ -70,14 +70,11 @@ interface CameraDevice {
   kind: 'videoinput';
 }
 
-interface StorageAPI {
-  savePhoto(photoData: string, metadata: PhotoMetadata): Promise<PhotoData>;
-  savePhotoEdit(editData: PhotoEditData): Promise<any>;
-  saveGeneratedPhoto(photoData: string, metadata: GeneratedPhotoMetadata): Promise<PhotoData>;
-  getPhotos(): Promise<PhotoData[]>;
-  deletePhoto(photoId: string): Promise<void>;
-  getStoragePath(): Promise<string>;
-  addToDisplayQueue(photoId: string): Promise<void>;
+interface HttpAPI {
+  uploadPhotoDraft(file: File, groupCode: string): Promise<any>;
+  uploadPhoto(file: File, groupCode: string, frame?: string, iconData?: string): Promise<any>;
+  getPhotoDrafts(groupCode: string): Promise<any>;
+  getPhotos(groupCode: string): Promise<any>;
 }
 
 // Basic camera permissions (for compatibility)
@@ -96,14 +93,6 @@ interface CameraAPI {
   }>;
 }
 
-interface PhotoDatabaseAPI {
-  testConnection(): Promise<{ success: boolean; connected?: boolean; error?: string }>;
-  savePhoto(photoData: any): Promise<{ success: boolean; photo?: any; error?: string }>;
-  getPhotos(limit?: number): Promise<{ success: boolean; photos?: any[]; error?: string }>;
-  deletePhoto(photoId: string): Promise<{ success: boolean; error?: string }>;
-  getPhotoCount(): Promise<{ success: boolean; count?: number; error?: string }>;
-  runMigration(): Promise<{ success: boolean; error?: string }>;
-}
 
 interface GCSStorageAPI {
   uploadPhoto(photoData: string, filename?: string): Promise<{ success: boolean; result?: any; error?: string }>;
@@ -164,9 +153,8 @@ interface DccConfig {
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
-  storageAPI: StorageAPI;
+  httpAPI: HttpAPI;
   cameraAPI: CameraAPI;
-  photoDatabase: PhotoDatabaseAPI;
   gcsStorage: GCSStorageAPI;
   configAPI: ConfigAPI;
   modalAPI: ModalAPI;

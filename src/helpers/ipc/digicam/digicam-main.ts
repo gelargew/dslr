@@ -355,6 +355,33 @@ ipcMain.handle('digicam:download-photo', async (event, filename: string) => {
   }
 });
 
+// Live view control handlers
+ipcMain.handle('digicam:start-live-view', async () => {
+  try {
+    console.log('🎬 Starting DigiCamControl live view...');
+    const liveViewUrl = `${DIGICAM_CONFIG.BASE_URL}?CMD=LiveViewWnd_Show`;
+    const response = await axios.get(liveViewUrl, { timeout: 5000 });
+    console.log('✅ Live view started successfully');
+    return { success: true, message: 'Live view started' };
+  } catch (error: any) {
+    console.error('❌ Failed to start live view:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('digicam:stop-live-view', async () => {
+  try {
+    console.log('⏹️ Stopping DigiCamControl live view...');
+    const liveViewUrl = `${DIGICAM_CONFIG.BASE_URL}?CMD=LiveViewWnd_Hide`;
+    const response = await axios.get(liveViewUrl, { timeout: 5000 });
+    console.log('✅ Live view stopped successfully');
+    return { success: true, message: 'Live view stopped' };
+  } catch (error: any) {
+    console.error('❌ Failed to stop live view:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 // Register all DigiCamControl handlers
 export function registerDigicamHandlers() {
   console.log('🔌 Registering DigiCamControl IPC handlers...');

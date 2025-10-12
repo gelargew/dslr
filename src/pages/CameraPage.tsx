@@ -10,6 +10,8 @@ declare global {
     electronAPI: {
       capture: () => Promise<{ success: boolean; message?: string; error?: string }>;
       checkDccStatus: () => Promise<{ connected: boolean; message?: string; error?: string }>;
+      startLiveView: () => Promise<{ success: boolean; message?: string; error?: string }>;
+      stopLiveView: () => Promise<{ success: boolean; message?: string; error?: string }>;
       onNewImage: (callback: (data: { original: string; processed: string }) => void) => void;
       removeAllListeners: (channel: string) => void;
     };
@@ -203,6 +205,19 @@ export default function CameraPage() {
     if (isCapturing) return;
 
     setError(null);
+
+    try {
+      // Stop live view before capture
+      console.log('⏹️ Stopping live view before capture...');
+      const result = await window.electronAPI.stopLiveView();
+      if (result.success) {
+        console.log('✅ Live view stopped successfully');
+      } else {
+        console.warn('⚠️ Failed to stop live view:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error stopping live view:', error);
+    }
 
     // Pause live view refresh when starting countdown
     setShouldRefreshLiveView(false);

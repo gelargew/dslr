@@ -18,10 +18,13 @@ const mockStorageAPI = {
     // Convert data URL to blob size estimation
     const sizeInBytes = imageData.length * 0.75; // Rough estimate for base64
 
+    // Use HTTP URL if provided in metadata, otherwise use data URL
+    const httpUrl = metadata?.httpUrl;
+
     const photo: PhotoRecord = {
       id: generateId(),
       filename: `photo-${Date.now()}.jpg`,
-      file_path: imageData, // Use data URL directly for mock
+      file_path: httpUrl || imageData, // Use HTTP URL if available, otherwise fallback to data URL
       original_width: 1920,
       original_height: 1080,
       file_size: sizeInBytes,
@@ -32,7 +35,10 @@ const mockStorageAPI = {
     };
 
     mockPhotos.unshift(photo);
-    console.log('Mock: Saved photo', photo.id);
+    console.log('Mock: Saved photo', photo.id, {
+      hasHttpUrl: !!httpUrl,
+      filePath: photo.file_path,
+    });
     return photo;
   },
 

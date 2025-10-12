@@ -4,11 +4,53 @@ import { usePhoto } from "@/hooks/usePhoto";
 import { getEditLandingDuration } from "@/config/photobooth-config";
 import { Button } from "@/components/ui/button";
 
+// Helper function to load image as base64 from URL
+const loadImageAsBase64 = async (imageUrl: string): Promise<string> => {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('❌ Failed to load image as base64:', error);
+    throw error;
+  }
+};
+
 export default function EditLandingPage() {
   const navigate = useNavigate();
-  const { currentPhoto } = usePhoto();
+  const { currentPhoto, uploadPhotoDraft } = usePhoto();
   const [countdown, setCountdown] = useState(getEditLandingDuration());
   const [showGreatShot, setShowGreatShot] = useState(false);
+  const [hasUploadedDraft, setHasUploadedDraft] = useState(false);
+
+  // Photo draft upload logic
+  useEffect(() => {
+    // Start photo draft upload after 2 seconds into countdown
+    if (!hasUploadedDraft && currentPhoto) {
+      const uploadTimer = setTimeout(async () => {
+        try {
+          console.log('📤 Uploading photo draft during Thank You countdown...');
+          // Extract base64 from the current photo's file_path if it's a data URL
+          const base64Data = currentPhoto.file_path.startsWith('data:')
+            ? currentPhoto.file_path
+            : await loadImageAsBase64(currentPhoto.file_path);
+
+          await uploadPhotoDraft(base64Data, currentPhoto.file_path);
+          setHasUploadedDraft(true);
+          console.log('✅ Photo draft uploaded successfully during Thank You countdown');
+        } catch (error) {
+          console.error('❌ Failed to upload photo draft:', error);
+        }
+      }, 2000); // 2 seconds into countdown
+
+      return () => clearTimeout(uploadTimer);
+    }
+  }, [currentPhoto, hasUploadedDraft, uploadPhotoDraft]);
 
   // Countdown logic
   useEffect(() => {

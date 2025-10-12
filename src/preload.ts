@@ -1,12 +1,15 @@
 // Working example preload script - exactly as provided in WORKING_EXAMPLES
 import { contextBridge, ipcRenderer } from 'electron';
 import { DIGICAM_CONFIG } from './constants/digicam';
+import { API_BASE_URL, API_KEY, API_ENDPOINTS } from './constants/api-constants';
 
 // Expose IPC handlers to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
   capture: () => ipcRenderer.invoke('capture'),
   checkDccStatus: () => ipcRenderer.invoke('check-dcc-status'),
   downloadPhoto: (filename: string) => ipcRenderer.invoke('digicam:download-photo', filename),
+  startLiveView: () => ipcRenderer.invoke('digicam:start-live-view'),
+  stopLiveView: () => ipcRenderer.invoke('digicam:stop-live-view'),
   onNewImage: (callback: (data: { original: string; processed: string }) => void) => {
     ipcRenderer.on('new-image', (_, data) => callback(data));
   },
@@ -31,15 +34,6 @@ contextBridge.exposeInMainWorld('debugInfo', {
   dccConfig: DIGICAM_CONFIG
 });
 
-// Database API
-contextBridge.exposeInMainWorld('photoDatabase', {
-  testConnection: () => ipcRenderer.invoke('db:test-connection'),
-  getPhotos: (limit) => ipcRenderer.invoke('db:get-photos', limit),
-  savePhoto: (photoData) => ipcRenderer.invoke('db:save-photo', photoData),
-  deletePhoto: (photoId) => ipcRenderer.invoke('db:delete-photo', photoId),
-  getPhotoCount: () => ipcRenderer.invoke('db:get-photo-count'),
-  runMigration: () => ipcRenderer.invoke('db:run-migration'),
-});
 
 // Camera API
 contextBridge.exposeInMainWorld('cameraAPI', {
@@ -59,6 +53,89 @@ contextBridge.exposeInMainWorld('fileAPI', {
   readLocalFile: (filePath: string) => ipcRenderer.invoke('file:read-local-file', filePath),
   fileExists: (filePath: string) => ipcRenderer.invoke('file:exists', filePath),
   getPhotoPath: (filename: string) => ipcRenderer.invoke('file:get-photo-path', filename),
+});
+
+// HTTP API for backend communication
+contextBridge.exposeInMainWorld('httpAPI', {
+  // Photo draft upload (after capture)
+  uploadPhotoDraft: (file: File, groupCode: string) => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('code', groupCode);
+
+      const headers = {
+        'x-api-key': API_KEY,
+      };
+
+      fetch(`${API_BASE_URL}${API_ENDPOINTS.UPLOAD_PHOTO_DRAFT}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+        .then(response => response.json())
+        .then(data => resolve(data))
+        .catch(error => reject(error));
+    });
+  },
+
+  // Final photo upload (after editing)
+  uploadPhoto: (file: File, groupCode: string, frame?: string, iconData?: string) => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('code', groupCode);
+      if (frame) formData.append('frame', frame);
+      if (iconData) formData.append('iconData', iconData);
+
+      const headers = {
+        'x-api-key': API_KEY,
+      };
+
+      fetch(`${API_BASE_URL}${API_ENDPOINTS.UPLOAD_PHOTO}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+        .then(response => response.json())
+        .then(data => resolve(data))
+        .catch(error => reject(error));
+    });
+  },
+
+  // Get photo drafts for videotron
+  getPhotoDrafts: (groupCode: string) => {
+    return new Promise((resolve, reject) => {
+      const headers = {
+        'x-api-key': API_KEY,
+      };
+
+      fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_PHOTO_DRAFTS}?code=${encodeURIComponent(groupCode)}`, {
+        method: 'GET',
+        headers,
+      })
+        .then(response => response.json())
+        .then(data => resolve(data))
+        .catch(error => reject(error));
+    });
+  },
+
+  // Get photos for videotron
+  getPhotos: (groupCode: string) => {
+    return new Promise((resolve, reject) => {
+      const headers = {
+        'x-api-key': API_KEY,
+      };
+
+      fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_PHOTOS}?code=${encodeURIComponent(groupCode)}`, {
+        method: 'GET',
+        headers,
+      })
+        .then(response => response.json())
+        .then(data => resolve(data))
+        .catch(error => reject(error));
+    });
+  },
 });
 
 // Configuration API

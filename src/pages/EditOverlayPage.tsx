@@ -7,10 +7,11 @@ import { shouldUploadToGCS, shouldCreateThumbnails } from "@/config/photobooth-c
 
 export default function EditOverlayPage() {
   const navigate = useNavigate();
-  const { currentPhoto, generateFinalPhoto } = usePhoto();
+  const { currentPhoto, generateFinalPhoto, uploadFinalPhoto } = usePhoto();
   const { editState, addOverlay, removeOverlay } = useEdit();
   const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isPrinting, setIsPrinting] = useState<boolean>(false);
 
   const handleBack = () => {
     navigate({ to: "/edit/photo" });
@@ -38,62 +39,18 @@ export default function EditOverlayPage() {
         overlays: editState.overlays || [],
       };
 
-      console.log('💾 Saving edit data:', editData);
+      console.log('💾 Preparing edit data:', editData);
 
-            // Generate and save the final photo
+      // Generate the final photo with frame and overlays
       const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
 
-      console.log('✅ Final photo generated and saved!');
+      console.log('✅ Final photo generated!');
 
-      // Upload to Google Cloud Storage
-      console.log('☁️ Uploading to Google Cloud Storage...');
-      const gcsResult = await window.gcsStorage.uploadPhoto(
-        finalPhotoData,
-        `final-${currentPhoto.id}-${Date.now()}.jpg`
-      );
+      // Upload the final photo via HTTP API
+      console.log('📤 Uploading final photo to backend...');
+      const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
 
-      let gcsUrl = null;
-      let thumbnailUrl = null;
-
-      if (gcsResult.success) {
-        gcsUrl = gcsResult.result.publicUrl;
-        console.log('✅ Photo uploaded to GCS:', gcsUrl);
-
-        // Also create and upload thumbnail (smaller version for gallery)
-        try {
-          const thumbnailResult = await window.gcsStorage.uploadThumbnail(
-            finalPhotoData,
-            `final-${currentPhoto.id}-${Date.now()}.jpg`
-          );
-
-          if (thumbnailResult.success) {
-            thumbnailUrl = thumbnailResult.result.publicUrl;
-            console.log('✅ Thumbnail uploaded to GCS:', thumbnailUrl);
-          }
-        } catch (thumbError) {
-          console.error('⚠️ Thumbnail upload failed (continuing anyway):', thumbError);
-        }
-      } else {
-        console.error('❌ GCS upload failed:', gcsResult.error);
-      }
-
-      // Save to Turso database for videotron access
-      const tursoResult = await window.photoDatabase.savePhoto({
-        filename: `final-${currentPhoto.id}-${Date.now()}.jpg`,
-        gcs_url: gcsUrl,
-        thumbnail_url: thumbnailUrl,
-        original_photo_id: currentPhoto.id,
-        frame_template_id: editData.frameTemplateId,
-        frame_text: editData.frameText,
-        text_settings: editData.textSettings,
-        overlays: editData.overlays,
-      });
-
-      if (tursoResult.success) {
-        console.log('✅ Photo saved to Turso:', tursoResult.photo);
-      } else {
-        console.error('❌ Failed to save to Turso:', tursoResult.error);
-      }
+      console.log('✅ Final photo uploaded successfully!', uploadedPhoto);
 
       // Navigate to completion page
       navigate({ to: "/complete" });
@@ -102,6 +59,164 @@ export default function EditOverlayPage() {
       // Still navigate to show user completion, but log the error
       navigate({ to: "/complete" });
     } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!currentPhoto) {
+      console.error('No current photo to print');
+      return;
+    }
+
+    setIsPrinting(true);
+
+    try {
+      console.log('🖨️ Starting print process...');
+
+      // Generate final photo with edits
+      const editData = {
+        photoId: currentPhoto.id,
+        frameTemplateId: editState.selectedFrame?.id || undefined,
+        frameText: editState.frameText || undefined,
+        textSettings: editState.selectedFrame?.style?.textSettings || undefined,
+        overlays: editState.overlays || [],
+      };
+
+      console.log('🎨 Generating final photo with edits for printing...');
+      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
+
+      console.log('✅ Final photo generated for printing!');
+
+      // Create a temporary image element for printing
+      const img = new Image();
+      img.onload = async () => {
+        // Create print window
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          throw new Error('Failed to open print window');
+        }
+
+        // Write image to print window
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Print Photo</title>
+              <style>
+                body { margin: 0; padding: 0; }
+                img { max-width: 100%; height: auto; }
+                @page { margin: 0; }
+              </style>
+            </head>
+            <body>
+              <img src="${finalPhotoData}" alt="Photo to print" onload="window.print(); window.close();" />
+            </body>
+          </html>
+        `);
+
+        printWindow.document.close();
+      };
+
+      img.src = finalPhotoData;
+    } catch (error) {
+      console.error('❌ Error during print:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handlePrintAndFinish = async () => {
+    if (!currentPhoto) {
+      console.error('No current photo to print');
+      return;
+    }
+
+    setIsPrinting(true);
+
+    try {
+      console.log('🖨️ Starting print process...');
+
+      // Generate final photo with edits
+      const editData = {
+        photoId: currentPhoto.id,
+        frameTemplateId: editState.selectedFrame?.id || undefined,
+        frameText: editState.frameText || undefined,
+        textSettings: editState.selectedFrame?.style?.textSettings || undefined,
+        overlays: editState.overlays || [],
+      };
+
+      console.log('🎨 Generating final photo with edits for printing...');
+      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
+
+      console.log('✅ Final photo generated for printing!');
+
+      // Create a temporary image element for printing
+      const img = new Image();
+      img.onload = async () => {
+        // Create print window
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          throw new Error('Failed to open print window');
+        }
+
+        // Write image to print window
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Print Photo</title>
+              <style>
+                body { margin: 0; padding: 0; }
+                img { max-width: 100%; height: auto; }
+                @page { margin: 0; }
+              </style>
+            </head>
+            <body>
+              <img src="${finalPhotoData}" alt="Photo to print" onload="window.print(); window.close();" />
+            </body>
+          </html>
+        `);
+
+        printWindow.document.close();
+
+        // After print completes (or is cancelled), continue with finish process
+        console.log('🖨️ Print completed, continuing with finish process...');
+
+        // Wait a moment for print to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Now continue with the normal finish flow
+        setIsSaving(true);
+
+        try {
+          console.log('📤 Uploading final photo to backend...');
+          const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
+          console.log('✅ Final photo uploaded successfully!', uploadedPhoto);
+        } catch (error) {
+          console.error('❌ Error uploading after print:', error);
+        }
+
+        // Navigate to completion page
+        navigate({ to: "/complete" });
+      };
+
+      img.src = finalPhotoData;
+    } catch (error) {
+      console.error('❌ Error during print:', error);
+      // Still continue with finish process
+      setIsSaving(true);
+
+      try {
+        console.log('📤 Uploading final photo to backend (fallback after print error)...');
+        const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
+        console.log('✅ Final photo uploaded successfully (fallback)!', uploadedPhoto);
+      } catch (error) {
+        console.error('❌ Error uploading after print error:', error);
+      }
+
+      // Navigate to completion page
+      navigate({ to: "/complete" });
+    } finally {
+      setIsPrinting(false);
       setIsSaving(false);
     }
   };
@@ -377,8 +492,17 @@ export default function EditOverlayPage() {
             </div>
           </button>
           <button
+            onClick={handlePrintAndFinish}
+            disabled={isPrinting || isSaving}
+            className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+          >
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
+              {isPrinting ? 'Printing...' : 'Print'}
+            </div>
+          </button>
+          <button
             onClick={handleFinish}
-            disabled={isSaving}
+            disabled={isSaving || isPrinting}
             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
             <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">

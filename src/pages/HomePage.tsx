@@ -1,13 +1,37 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import startImage from '/start.png';
 import { configManager } from '@/services/config-manager';
 
+// TypeScript declarations for the DigiCamControl API
+declare global {
+  interface Window {
+    electronAPI: {
+      startLiveView: () => Promise<{ success: boolean; message?: string; error?: string }>;
+      stopLiveView: () => Promise<{ success: boolean; message?: string; error?: string }>;
+    };
+  }
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    try {
+      // Start live view before navigating to camera
+      console.log('🎬 Starting live view from homepage...');
+      const result = await window.electronAPI.startLiveView();
+      if (result.success) {
+        console.log('✅ Live view started successfully');
+      } else {
+        console.warn('⚠️ Failed to start live view:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error starting live view:', error);
+    }
+
+    // Navigate to camera page regardless of live view status
     navigate({ to: "/camera" });
   };
 

@@ -1,6 +1,5 @@
 import { app, BrowserWindow } from "electron";
 import registerListeners from "./helpers/ipc/listeners-register";
-import { registerDatabaseHandlers } from "./helpers/ipc/database/database-main";
 import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
 import { registerConfigHandlers } from "./helpers/ipc/config/config-main";
 import { registerDigicamHandlers, setDigicamMainWindow, setupFileWatcher, setupExpressServer } from "./helpers/ipc/digicam/digicam-main";
@@ -114,10 +113,7 @@ function createWindow() {
 
   registerListeners(mainWindow);
 
-    // Register database handlers
-  registerDatabaseHandlers();
-
-  // Register storage handlers
+  // Register storage handlers (GCS storage)
   registerStorageHandlers();
 
   // Register config handlers
@@ -164,23 +160,6 @@ function createWindow() {
 
     return false;
   });
-
-  // Initialize database after handlers are registered
-  console.log('🔌 Initializing Turso database...');
-
-  // Ensure database is properly initialized for production
-  const initializeDatabase = async () => {
-    try {
-      const { photoDatabase } = await import('./helpers/database/turso-client');
-      await photoDatabase.initialize();
-      console.log('✅ Database initialized successfully');
-    } catch (error) {
-      console.error('❌ Database initialization failed:', error);
-    }
-  };
-
-  // Initialize database
-  initializeDatabase();
 
   // Add keyboard shortcuts
   mainWindow.webContents.on('before-input-event', (event, input) => {

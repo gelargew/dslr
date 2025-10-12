@@ -3,6 +3,23 @@ import { useNavigate } from "@tanstack/react-router";
 import { usePhoto } from "@/hooks/usePhoto";
 import { getThankYouDuration } from "@/config/photobooth-config";
 
+// Helper function to load image as base64 from URL
+const loadImageAsBase64 = async (imageUrl: string): Promise<string> => {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('❌ Failed to load image as base64:', error);
+    throw error;
+  }
+};
+
 export default function CompletePage() {
   const navigate = useNavigate();
   const { clearCurrentPhoto, clearCurrentEdit } = usePhoto();

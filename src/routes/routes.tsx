@@ -11,7 +11,7 @@ import EditPhotoPage from "@/pages/EditPhotoPage";
 import EditOverlayPage from "@/pages/EditOverlayPage";
 import CompletePage from "@/pages/CompletePage";
 
-// Photobooth Routes - HomePage is the main welcome screen
+// Textimoni Photobooth Routes - HomePage is the main welcome screen
 export const HomeMainRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "/",

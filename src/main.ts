@@ -5,12 +5,72 @@ import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
 import { registerConfigHandlers } from "./helpers/ipc/config/config-main";
 import { registerDigicamHandlers, setDigicamMainWindow, setupFileWatcher, setupExpressServer } from "./helpers/ipc/digicam/digicam-main";
 import { registerFileHandlers } from "./helpers/ipc/file/file-main";
-// "electron-squirrel-startup" seems broken when packaging with vite
-//import started from "electron-squirrel-startup";
+import started from "electron-squirrel-startup";
 import path from "path";
+import { spawn } from "child_process";
 // Dynamic import for dev tools - only in development
 
 const inDevelopment = process.env.NODE_ENV === "development";
+
+// Handle Squirrel startup - prevent app from running during installation
+if (started) {
+  console.log('🚫 Squirrel startup detected, exiting to prevent issues during installation');
+  process.exit(0);
+}
+
+// Squirrel Windows Update.exe helper functions
+const appFolder = path.resolve(process.execPath, '..');
+const rootAtomFolder = path.resolve(appFolder, '..');
+const updateDotExe = path.resolve(path.join(rootAtomFolder, 'Update.exe'));
+const exeName = path.basename(process.execPath);
+
+const spawnUpdate = function(args: string[]) {
+  try {
+    return spawn(updateDotExe, args, { detached: true });
+  } catch (error) {
+    console.error('Failed to spawn update process:', error);
+    return null;
+  }
+};
+
+// Handle Squirrel events for Windows
+if (process.platform === 'win32') {
+  const args = process.argv.slice(1);
+  const squirrelEvent = args.find(arg => arg.startsWith('--squirrel'));
+
+  if (squirrelEvent) {
+    console.log('🐿️ Squirrel event detected:', squirrelEvent);
+
+    switch (squirrelEvent) {
+      case '--squirrel-install':
+      case '--squirrel-updated':
+        // Install desktop and start menu shortcuts
+        console.log('📌 Creating shortcuts...');
+        if (spawnUpdate(['--createShortcut', exeName])) {
+          console.log('✅ Shortcuts created successfully');
+        }
+        setTimeout(() => app.quit(), 1000);
+        break;
+
+      case '--squirrel-uninstall':
+        // Remove desktop and start menu shortcuts
+        console.log('🗑️ Removing shortcuts...');
+        if (spawnUpdate(['--removeShortcut', exeName])) {
+          console.log('✅ Shortcuts removed successfully');
+        }
+        setTimeout(() => app.quit(), 1000);
+        break;
+
+      case '--squirrel-obsolete':
+        // Handle obsolete event
+        console.log('📦 App obsolete...');
+        setTimeout(() => app.quit(), 1000);
+        break;
+    }
+
+    process.exit(0);
+  }
+}
 
 function createWindow() {
   const preload = path.join(__dirname, "preload.js");
@@ -62,7 +122,7 @@ function createWindow() {
   // Register file handlers for local file access
   registerFileHandlers();
 
-  
+
   // Register DigiCamControl handlers
   registerDigicamHandlers();
 

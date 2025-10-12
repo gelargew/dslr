@@ -29,7 +29,6 @@ const config: ForgeConfig = {
       InternalName: "textimoni-photobooth.exe",
       OriginalFilename: "textimoni-photobooth.exe",
       ProductName: "Textimoni Photobooth",
-      ProductVersion: "1.0.0",
       "requested-execution-level": "asInvoker",
       FileVersion: "1.0.0",
       LegalCopyright: "Copyright © 2025 Textimoni"
@@ -49,6 +48,10 @@ const config: ForgeConfig = {
       // Windows Squirrel installer configuration
       setupExe: "textimoni-photobooth-setup.exe",
       name: "textimoni-photobooth",
+      // Prevent app from opening during installation - use NSIS instead of MSI
+      noMsi: true,
+      // Additional options to ensure proper behavior
+      title: "Textimoni Photobooth",
       // Note: setupIcon requires .ico format - will add later when available
       // loadingGif: "public/start.png", // Remove for now as it may also cause issues
     }),

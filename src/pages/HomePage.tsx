@@ -16,7 +16,7 @@ export default function HomePage() {
 
   return (
     <div className="bg-gray-900 relative size-full overflow-hidden">
-      <img src={startImage} alt="Photobooth Background" className="absolute inset-0 w-full h-full object-cover" />
+      <img src={startImage} alt="Textimoni Background" className="absolute inset-0 w-full h-full object-cover" />
 
 
       {/* Main content container with glass morphism */}
@@ -27,7 +27,7 @@ export default function HomePage() {
         <div className="font-bold leading-tight relative shrink-0 text-white text-4xl md:text-6xl text-center tracking-tight">
           <h1 className="leading-tight whitespace-pre">
             <span className="font-normal">Welcome to the</span>
-            <span className="font-bold"> Textimoni Photobooth!</span>
+            <span className="font-bold"> Textimoni!</span>
           </h1>
         </div>
 

@@ -31,6 +31,7 @@ export default function CountdownPage() {
   const [captureStatus, setCaptureStatus] = useState<string>('');
   const [liveViewKey, setLiveViewKey] = useState(Date.now());
   const [shouldRefreshLiveView, setShouldRefreshLiveView] = useState(true);
+  const refreshInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Check DigiCamControl status on mount
   useEffect(() => {
@@ -92,6 +93,29 @@ export default function CountdownPage() {
     };
   }, [capturePhoto, navigate]);
 
+  // 10fps live view refresh
+  useEffect(() => {
+    if (dccConnected && shouldRefreshLiveView) {
+      refreshInterval.current = setInterval(() => {
+        setLiveViewKey(Date.now());
+      }, 100); // 10fps = 100ms interval
+
+      console.log('🎬 Countdown: Started 10fps live view refresh');
+    } else {
+      if (refreshInterval.current) {
+        clearInterval(refreshInterval.current);
+        refreshInterval.current = null;
+        console.log('⏸️ Countdown: Paused live view refresh');
+      }
+    }
+
+    return () => {
+      if (refreshInterval.current) {
+        clearInterval(refreshInterval.current);
+      }
+    };
+  }, [dccConnected, shouldRefreshLiveView]);
+
   // Countdown logic
   useEffect(() => {
     if (countdown > 0) {
@@ -151,7 +175,7 @@ export default function CountdownPage() {
       {/* DigiCamControl Live View Background */}
       {dccConnected ? (
         <img
-          src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${Date.now()}` : ''}`}
+          src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
           alt="Live View"
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => {

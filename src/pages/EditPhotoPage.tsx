@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { usePhotoContext } from "@/contexts/PhotoContext";
-import { useEditContext } from "@/contexts/EditContext";
+import { usePhoto } from "@/hooks/usePhoto";
+import { useEdit } from "@/hooks/useEdit";
 import { FrameTemplate, frameTemplates } from "@/assets/frames/frame-templates";
 
 export default function EditPhotoPage() {
   const navigate = useNavigate();
-  const { currentPhoto } = usePhotoContext();
+  const { currentPhoto } = usePhoto();
   const {
     editState,
     setSelectedFrame,
     setFrameText
-  } = useEditContext();
+  } = useEdit();
 
   // Local state
   const [message, setMessage] = useState<string>("");

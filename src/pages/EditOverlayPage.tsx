@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { usePhotoContext } from "@/contexts/PhotoContext";
-import { useEditContext } from "@/contexts/EditContext";
+import { usePhoto } from "@/hooks/usePhoto";
+import { useEdit } from "@/hooks/useEdit";
 import { overlayIcons, createDefaultIconOverlay } from "@/assets/icons/overlay-icons";
 import { shouldUploadToGCS, shouldCreateThumbnails } from "@/config/photobooth-config";
 
 export default function EditOverlayPage() {
   const navigate = useNavigate();
-  const { currentPhoto, generateFinalPhoto } = usePhotoContext();
-  const { editState, addOverlay, removeOverlay } = useEditContext();
+  const { currentPhoto, generateFinalPhoto } = usePhoto();
+  const { editState, addOverlay, removeOverlay } = useEdit();
   const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 

@@ -1,13 +1,18 @@
 // DigiCamControl Configuration Constants
 // Based on DigiCamControl WebServer plugin documentation
+// Default configuration - actual values come from Zustand store in renderer process
 
 export const DIGICAM_CONFIG = {
-  BASE_URL: 'http://127.0.0.1:5513',
+  // Default base URL - actual config comes from Zustand store
+  get BASE_URL() {
+    return 'http://127.0.0.1:5513'; // Default fallback
+  },
 
   ENDPOINTS: {
     CAPTURE: '/?CMD=Capture', // Correct DigiCamControl capture endpoint
     LIVEVIEW: '/liveview.jpg',
-    LIVEVIEW_JSON: '/json/liveview'
+    LIVEVIEW_JSON: '/json/liveview',
+    DOWNLOAD: '/download' // Download endpoint for captured photos
   },
 
   // Windows-specific paths - use os.homedir() for more reliable path detection
@@ -22,9 +27,16 @@ export const DIGICAM_CONFIG = {
     return path.join(os.homedir(), 'Pictures', 'digiCamControl', 'Session1', 'overlay.png');
   },
 
+  // Dynamic URL getters that use the current configuration
   get CAPTURE_URL() { return `${this.BASE_URL}${this.ENDPOINTS.CAPTURE}`; },
   get LIVEVIEW_URL() { return `${this.BASE_URL}${this.ENDPOINTS.LIVEVIEW}`; },
-  get LIVEVIEW_JSON_URL() { return `${this.BASE_URL}${this.ENDPOINTS.LIVEVIEW_JSON}`; }
+  get LIVEVIEW_JSON_URL() { return `${this.BASE_URL}${this.ENDPOINTS.LIVEVIEW_JSON}`; },
+  get DOWNLOAD_URL() { return `${this.BASE_URL}${this.ENDPOINTS.DOWNLOAD}`; },
+
+  // Helper method to get the photo download URL with correct format
+  getPhotoDownloadUrl(filename: string): string {
+    return `${this.BASE_URL}/image/${filename}`;
+  }
 };
 
 // Export individual constants for easier importing

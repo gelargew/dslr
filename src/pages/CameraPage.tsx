@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { usePhotoContext } from "@/contexts/PhotoContext";
+import { usePhoto } from "@/hooks/usePhoto";
 import { Camera, Settings } from "lucide-react";
 
 // TypeScript declarations for the DigiCamControl API
@@ -33,7 +33,7 @@ declare global {
 
 export default function CameraPage() {
   const navigate = useNavigate();
-  const { capturePhoto, isCapturing } = usePhotoContext();
+  const { capturePhoto, isCapturing } = usePhoto();
   const [dccConnected, setDccConnected] = useState(false);
   const [dccStatus, setDccStatus] = useState<string>('Checking DigiCamControl...');
   const [lastImage, setLastImage] = useState<string | null>(null);

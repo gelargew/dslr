@@ -317,6 +317,44 @@ export function setupExpressServer() {
   });
 }
 
+// Download photo from DigiCamControl web server via HTTP
+ipcMain.handle('digicam:download-photo', async (event, filename: string) => {
+  try {
+    console.log('🌐 Downloading photo from DigiCamControl web server:', filename);
+
+    // Use dynamic URL from configuration
+    const photoUrl = DIGICAM_CONFIG.getPhotoDownloadUrl(filename);
+    console.log('📸 Photo URL:', photoUrl);
+
+    const response = await axios.get(photoUrl, {
+      responseType: 'arraybuffer',
+      timeout: 10000
+    });
+
+    console.log('✅ Successfully downloaded photo from DigiCamControl:', filename);
+    console.log('📊 Response status:', response.status);
+    console.log('📊 Response size:', response.data.byteLength, 'bytes');
+
+    // Convert to base64 for UI consumption
+    const base64 = Buffer.from(response.data).toString('base64');
+
+    return {
+      success: true,
+      data: base64,
+      filename: filename
+    };
+
+  } catch (error: any) {
+    console.error('❌ Failed to download photo from DigiCamControl:', error.message);
+    console.error('❌ Full error:', error);
+    return {
+      success: false,
+      error: error.message,
+      filename: filename
+    };
+  }
+});
+
 // Register all DigiCamControl handlers
 export function registerDigicamHandlers() {
   console.log('🔌 Registering DigiCamControl IPC handlers...');

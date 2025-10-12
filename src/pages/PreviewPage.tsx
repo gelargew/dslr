@@ -1,11 +1,11 @@
 import React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { usePhotoContext } from "@/contexts/PhotoContext";
+import { usePhoto } from "@/hooks/usePhoto";
 
 export default function PreviewPage() {
   const navigate = useNavigate();
-  const { currentPhoto, isLoading } = usePhotoContext();
+  const { currentPhoto, isLoading } = usePhoto();
 
   const handleRetake = () => {
     navigate({ to: "/camera" });

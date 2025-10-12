@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { usePhotoContext } from "@/contexts/PhotoContext";
+import { usePhoto } from "@/hooks/usePhoto";
 import { getCountdownDuration } from "@/config/photobooth-config";
 import { Camera } from "lucide-react";
 
@@ -10,6 +10,7 @@ declare global {
     electronAPI: {
       capture: () => Promise<{ success: boolean; message?: string; error?: string }>;
       checkDccStatus: () => Promise<{ connected: boolean; message?: string; error?: string }>;
+      downloadPhoto: (filename: string) => Promise<{ success: boolean; data?: string; error?: string; filename?: string }>;
       onNewImage: (callback: (data: { original: string; processed: string }) => void) => void;
       removeAllListeners: (channel: string) => void;
     };
@@ -29,7 +30,7 @@ declare global {
 
 export default function CountdownPage() {
   const navigate = useNavigate();
-  const { capturePhoto } = usePhotoContext();
+  const { capturePhoto } = usePhoto();
   const [countdown, setCountdown] = useState(getCountdownDuration());
   const [isCapturing, setIsCapturing] = useState(false);
   const [dccConnected, setDccConnected] = useState(false);
@@ -59,57 +60,51 @@ export default function CountdownPage() {
       setCaptureStatus('Photo captured successfully!');
 
       try {
-        // Get the full file path for the captured image
-        const pathResult = await window.fileAPI.getPhotoPath(data.processed);
-        if (!pathResult.success) {
-          console.error('❌ Failed to get photo path:', pathResult.error);
-          // Fallback to HTTP method
-          await loadImageViaHTTP(data.processed);
-          return;
+        // PRIORITY 1: Try HTTP download from DigiCamControl web server first (works in production)
+        console.log('🌐 Attempting to download photo via DigiCamControl web server:', data.processed);
+        const downloadResult = await window.electronAPI.downloadPhoto(data.processed);
+
+        if (downloadResult.success && downloadResult.data) {
+          console.log('✅ Successfully downloaded photo via HTTP');
+
+          // Create an image element to convert to base64
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1080;
+            canvas.height = 1080;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              // Draw and crop to square
+              const size = Math.min(img.width, img.height);
+              const x = (img.width - size) / 2;
+              const y = (img.height - size) / 2;
+              ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
+
+              const base64 = canvas.toDataURL('image/jpeg', 0.9);
+              capturePhoto(base64);
+
+              // Navigate to preview page after successful capture
+              navigate({ to: "/preview" });
+            }
+          };
+          img.onerror = async () => {
+            console.error('Failed to load downloaded image, falling back to file system');
+            // Fallback to file system method
+            await loadImageViaFileSystem(data.processed);
+          };
+
+          img.src = `data:image/jpeg;base64,${downloadResult.data}`;
+          return; // Success, exit early
+        } else {
+          console.warn('⚠️ HTTP download failed, falling back to file system:', downloadResult.error);
         }
-
-        // Read the file using the file API
-        const fileResult = await window.fileAPI.readLocalFile(pathResult.path);
-        if (!fileResult.success) {
-          console.error('❌ Failed to read image file:', fileResult.error);
-          // Fallback to HTTP method
-          await loadImageViaHTTP(data.processed);
-          return;
-        }
-
-        // Create an image element to convert to base64
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 1080;
-          canvas.height = 1080;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            // Draw and crop to square
-            const size = Math.min(img.width, img.height);
-            const x = (img.width - size) / 2;
-            const y = (img.height - size) / 2;
-            ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
-
-            const base64 = canvas.toDataURL('image/jpeg', 0.9);
-            capturePhoto(base64);
-
-            // Navigate to preview page after successful capture
-            navigate({ to: "/preview" });
-          }
-        };
-        img.onerror = () => {
-          console.error('Failed to load captured image from file, falling back to HTTP');
-          // Fallback to HTTP method
-          loadImageViaHTTP(data.processed);
-        };
-
-        img.src = `data:image/jpeg;base64,${fileResult.data}`;
       } catch (error) {
-        console.error('❌ Error processing captured image:', error);
-        // Fallback to HTTP method
-        await loadImageViaHTTP(data.processed);
+        console.warn('⚠️ HTTP download error, falling back to file system:', error);
       }
+
+      // PRIORITY 2: Fallback to file system method (for development)
+      await loadImageViaFileSystem(data.processed);
     };
 
     window.electronAPI.onNewImage(handleNewImage);
@@ -119,7 +114,63 @@ export default function CountdownPage() {
     };
   }, [capturePhoto, navigate]);
 
-  // Fallback method: try HTTP method if file access fails
+  // Fallback method: try file system if HTTP download fails (for development)
+  const loadImageViaFileSystem = async (filename: string) => {
+    try {
+      // Get the full file path for the captured image
+      const pathResult = await window.fileAPI.getPhotoPath(filename);
+      if (!pathResult.success) {
+        console.error('❌ Failed to get photo path:', pathResult.error);
+        // Final fallback to HTTP method
+        await loadImageViaHTTP(filename);
+        return;
+      }
+
+      // Read the file using the file API
+      const fileResult = await window.fileAPI.readLocalFile(pathResult.path);
+      if (!fileResult.success) {
+        console.error('❌ Failed to read image file:', fileResult.error);
+        // Final fallback to HTTP method
+        await loadImageViaHTTP(filename);
+        return;
+      }
+
+      // Create an image element to convert to base64
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Draw and crop to square
+          const size = Math.min(img.width, img.height);
+          const x = (img.width - size) / 2;
+          const y = (img.height - size) / 2;
+          ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
+
+          const base64 = canvas.toDataURL('image/jpeg', 0.9);
+          capturePhoto(base64);
+
+          // Navigate to preview page after successful capture
+          navigate({ to: "/preview" });
+        }
+      };
+      img.onerror = async () => {
+        console.error('Failed to load captured image from file, falling back to HTTP');
+        // Final fallback to HTTP method
+        await loadImageViaHTTP(filename);
+      };
+
+      img.src = `data:image/jpeg;base64,${fileResult.data}`;
+    } catch (error) {
+      console.error('❌ Error processing captured image via file system:', error);
+      // Final fallback to HTTP method
+      await loadImageViaHTTP(filename);
+    }
+  };
+
+  // Final fallback method: try HTTP method if file access fails
   const loadImageViaHTTP = async (filename: string) => {
     try {
       const imageUrl = `http://localhost:3001/photos/${filename}`;

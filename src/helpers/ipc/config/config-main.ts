@@ -1,25 +1,25 @@
-// Configuration IPC handlers for main process (simplified for DigiCamControl)
+// Configuration IPC handlers for main process (now supports dynamic config)
 import { ipcMain } from 'electron';
 
 export function registerConfigHandlers() {
-  console.log('🔌 Registering simplified configuration IPC handlers...');
+  console.log('🔌 Registering dynamic configuration IPC handlers...');
 
-  // Get current configuration (returns hardcoded DigiCamControl config)
+  // Get current configuration (returns dynamic config from frontend)
   ipcMain.handle('config:get-config', async () => {
     try {
-      const hardcodedConfig = {
-        liveFeedUrl: 'http://127.0.0.1:5513/liveview.jpg',
-        captureUrl: 'http://127.0.0.1:5513/json/capture',
-        refreshRate: 20,
-        timeout: 5000,
-        retryAttempts: 3
+      // Configuration is now managed entirely by the frontend config manager
+      // This handler is kept for compatibility but returns basic info
+      const basicConfig = {
+        message: 'Configuration is now managed by the frontend config manager',
+        managedBy: 'frontend',
+        storage: 'localStorage'
       };
 
-      console.log('📋 Using hardcoded DigiCamControl configuration');
+      console.log('📋 Configuration managed by frontend (localStorage)');
 
       return {
         success: true,
-        config: hardcodedConfig,
+        config: basicConfig,
       };
     } catch (error) {
       console.error('❌ Failed to get configuration:', error);
@@ -30,13 +30,17 @@ export function registerConfigHandlers() {
     }
   });
 
-  // Save configuration (no-op since we use hardcoded config)
+  // Save configuration (now forwards to frontend config manager)
   ipcMain.handle('config:save-config', async (_, configData) => {
     try {
-      console.log('💾 Configuration save requested (using hardcoded setup - no changes saved)');
+      console.log('💾 Configuration save requested - forwarding to frontend config manager');
+
+      // The actual saving is now handled by the frontend config manager
+      // This handler just acknowledges the request
 
       return {
         success: true,
+        message: 'Configuration will be saved by frontend config manager',
       };
     } catch (error) {
       console.error('❌ Failed to save configuration:', error);
@@ -47,13 +51,17 @@ export function registerConfigHandlers() {
     }
   });
 
-  // Reset configuration (no-op)
+  // Reset configuration (now forwards to frontend config manager)
   ipcMain.handle('config:reset-config', async () => {
     try {
-      console.log('🔄 Configuration reset requested (using hardcoded setup)');
+      console.log('🔄 Configuration reset requested - forwarding to frontend config manager');
+
+      // The actual reset is now handled by the frontend config manager
+      // This handler just acknowledges the request
 
       return {
         success: true,
+        message: 'Configuration will be reset by frontend config manager',
       };
     } catch (error) {
       console.error('❌ Failed to reset configuration:', error);
@@ -64,5 +72,24 @@ export function registerConfigHandlers() {
     }
   });
 
-  console.log('✅ Configuration IPC handlers registered');
+  // Get current DigiCamControl URL for debugging
+  ipcMain.handle('config:get-digicam-url', async () => {
+    try {
+      // This would need to be implemented to get the current URL from the frontend
+      // For now, return a placeholder that indicates it should be retrieved from frontend
+      return {
+        success: true,
+        url: 'managed-by-frontend',
+        message: 'DigiCamControl URL is managed by frontend config manager'
+      };
+    } catch (error) {
+      console.error('❌ Failed to get DigiCamControl URL:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  });
+
+  console.log('✅ Dynamic configuration IPC handlers registered');
 }

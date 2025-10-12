@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import startImage from '/start.png';
+import { configManager } from '@/services/config-manager';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -12,6 +13,14 @@ export default function HomePage() {
 
   const handleGallery = () => {
     navigate({ to: "/gallery" });
+  };
+
+  const testDebuggerToggle = () => {
+    const current = configManager.getDebuggerEnabled();
+    console.log('🧪 Test toggle - Current debugger state:', current);
+    const newState = !current;
+    const result = configManager.setDebuggerEnabled(newState);
+    console.log('🧪 Test toggle - Set result:', result, 'New state should be:', newState);
   };
 
   return (
@@ -54,6 +63,15 @@ export default function HomePage() {
             size="default"
           >
             📸 View Gallery
+          </Button>
+
+          {/* Test button for debugging */}
+          <Button
+            onClick={testDebuggerToggle}
+            className="bg-red-600 hover:bg-red-700 text-white font-medium text-lg px-6 py-2 rounded-lg"
+            size="default"
+          >
+            🧪 Toggle Debugger (Test)
           </Button>
         </div>
       </div>

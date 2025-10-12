@@ -6,6 +6,7 @@ import { DIGICAM_CONFIG } from './constants/digicam';
 contextBridge.exposeInMainWorld('electronAPI', {
   capture: () => ipcRenderer.invoke('capture'),
   checkDccStatus: () => ipcRenderer.invoke('check-dcc-status'),
+  downloadPhoto: (filename: string) => ipcRenderer.invoke('digicam:download-photo', filename),
   onNewImage: (callback: (data: { original: string; processed: string }) => void) => {
     ipcRenderer.on('new-image', (_, data) => callback(data));
   },
@@ -58,6 +59,13 @@ contextBridge.exposeInMainWorld('fileAPI', {
   readLocalFile: (filePath: string) => ipcRenderer.invoke('file:read-local-file', filePath),
   fileExists: (filePath: string) => ipcRenderer.invoke('file:exists', filePath),
   getPhotoPath: (filename: string) => ipcRenderer.invoke('file:get-photo-path', filename),
+});
+
+// Configuration API
+contextBridge.exposeInMainWorld('configAPI', {
+  getConfig: () => ipcRenderer.invoke('config:get-config'),
+  saveConfig: (configData) => ipcRenderer.invoke('config:save-config', configData),
+  resetConfig: () => ipcRenderer.invoke('config:reset-config'),
 });
 
 console.log('✅ All APIs exposed via context bridge');

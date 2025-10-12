@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { usePhotoContext } from "@/contexts/PhotoContext";
+import { usePhoto } from "@/hooks/usePhoto";
 import { getThankYouDuration } from "@/config/photobooth-config";
 
 export default function CompletePage() {
   const navigate = useNavigate();
-  const { clearCurrentPhoto, clearCurrentEdit } = usePhotoContext();
+  const { clearCurrentPhoto, clearCurrentEdit } = usePhoto();
   const [countdown, setCountdown] = useState(getThankYouDuration());
 
   useEffect(() => {

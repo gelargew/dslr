@@ -2,7 +2,6 @@ import { app, BrowserWindow } from "electron";
 import registerListeners from "./helpers/ipc/listeners-register";
 import { registerDatabaseHandlers } from "./helpers/ipc/database/database-main";
 import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
-import { registerCameraHandlers } from "./helpers/ipc/camera/camera-main";
 import { registerConfigHandlers } from "./helpers/ipc/config/config-main";
 import { registerModalHandlers } from "./helpers/ipc/modal/modal-main";
 import { registerDigicamHandlers, setDigicamMainWindow, setupFileWatcher, setupExpressServer } from "./helpers/ipc/digicam/digicam-main";
@@ -56,9 +55,6 @@ function createWindow() {
 
   // Register storage handlers
   registerStorageHandlers();
-
-  // Register camera handlers
-  registerCameraHandlers();
 
   // Register config handlers
   registerConfigHandlers();

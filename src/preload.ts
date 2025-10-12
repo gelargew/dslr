@@ -1,37 +1,53 @@
-// Back to context bridge approach but with correct channel names
-const { contextBridge, ipcRenderer } = require('electron');
+// Working example preload script - exactly as provided in WORKING_EXAMPLES
+import { contextBridge, ipcRenderer } from 'electron';
+import { DIGICAM_CONFIG } from './constants/digicam';
 
-console.log('🚀 Preload script starting...');
+// Expose IPC handlers to renderer process
+contextBridge.exposeInMainWorld('electronAPI', {
+  capture: () => ipcRenderer.invoke('capture'),
+  checkDccStatus: () => ipcRenderer.invoke('check-dcc-status'),
+  onNewImage: (callback: (data: { original: string; processed: string }) => void) => {
+    ipcRenderer.on('new-image', (_, data) => callback(data));
+  },
+  removeAllListeners: (channel: string) => {
+    ipcRenderer.removeAllListeners(channel);
+  }
+});
 
-try {
-  // Database API
-  contextBridge.exposeInMainWorld('photoDatabase', {
-    testConnection: () => ipcRenderer.invoke('db:test-connection'),
-    getPhotos: (limit) => ipcRenderer.invoke('db:get-photos', limit),
-    savePhoto: (photoData) => ipcRenderer.invoke('db:save-photo', photoData),
-    deletePhoto: (photoId) => ipcRenderer.invoke('db:delete-photo', photoId),
-    getPhotoCount: () => ipcRenderer.invoke('db:get-photo-count'),
-    runMigration: () => ipcRenderer.invoke('db:run-migration'),
-  });
+// Expose DigiCamControl configuration to renderer
+contextBridge.exposeInMainWorld('dccConfig', {
+  liveViewUrl: `${DIGICAM_CONFIG.LIVEVIEW_URL}`,
+  photoUrl: 'http://localhost:3000/photos/',
+  baseUrl: DIGICAM_CONFIG.BASE_URL,
+  captureUrl: DIGICAM_CONFIG.CAPTURE_URL
+});
 
-  // Camera API
-  contextBridge.exposeInMainWorld('cameraAPI', {
-    getPermissions: () => ipcRenderer.invoke('camera:get-permissions'),
-    requestPermissions: () => ipcRenderer.invoke('camera:request-permissions'),
-  });
+// For debugging - also expose the raw configuration
+contextBridge.exposeInMainWorld('debugInfo', {
+  dccConfig: DIGICAM_CONFIG
+});
 
-  // Window API
-  contextBridge.exposeInMainWorld('electronWindow', {
-    minimize: () => ipcRenderer.invoke('window:minimize'),
-    maximize: () => ipcRenderer.invoke('window:maximize'),
-    close: () => ipcRenderer.invoke('window:close'),
-  });
+// Database API
+contextBridge.exposeInMainWorld('photoDatabase', {
+  testConnection: () => ipcRenderer.invoke('db:test-connection'),
+  getPhotos: (limit) => ipcRenderer.invoke('db:get-photos', limit),
+  savePhoto: (photoData) => ipcRenderer.invoke('db:save-photo', photoData),
+  deletePhoto: (photoId) => ipcRenderer.invoke('db:delete-photo', photoId),
+  getPhotoCount: () => ipcRenderer.invoke('db:get-photo-count'),
+  runMigration: () => ipcRenderer.invoke('db:run-migration'),
+});
 
-  // DigiCamControl API
-  const { exposeDigicamContext } = require('./helpers/ipc/digicam/digicam-context');
-  exposeDigicamContext();
+// Camera API
+contextBridge.exposeInMainWorld('cameraAPI', {
+  getPermissions: () => ipcRenderer.invoke('camera:get-permissions'),
+  requestPermissions: () => ipcRenderer.invoke('camera:request-permissions'),
+});
 
-  console.log('✅ All APIs exposed via context bridge');
-} catch (error) {
-  console.error('❌ Failed to expose APIs:', error);
-}
+// Window API
+contextBridge.exposeInMainWorld('electronWindow', {
+  minimize: () => ipcRenderer.invoke('window:minimize'),
+  maximize: () => ipcRenderer.invoke('window:maximize'),
+  close: () => ipcRenderer.invoke('window:close'),
+});
+
+console.log('✅ All APIs exposed via context bridge');

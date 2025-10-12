@@ -32,14 +32,12 @@ export function exposeDigicamContext() {
       }
     });
 
-    // Expose DigiCamControl configuration
+    // Expose DigiCamControl configuration following documentation
     contextBridge.exposeInMainWorld('dccConfig', {
-      liveViewUrl: DIGICAM_CONFIG.LIVEVIEW_URL,
-      photoUrl: `http://localhost:${EXPRESS_CONFIG.PORT}/photos/`,
+      liveViewUrl: `${DIGICAM_CONFIG.LIVEVIEW_URL}`,
+      photoUrl: 'http://localhost:8777/photos/',
       baseUrl: DIGICAM_CONFIG.BASE_URL,
-      captureUrl: DIGICAM_CONFIG.CAPTURE_URL,
-      galleryUrl: `http://localhost:${EXPRESS_CONFIG.PORT}/`,
-      statusUrl: `http://localhost:${EXPRESS_CONFIG.PORT}${EXPRESS_CONFIG.STATUS_ROUTE}`
+      captureUrl: DIGICAM_CONFIG.CAPTURE_URL
     });
 
     console.log('✅ DigiCamControl context exposed successfully');

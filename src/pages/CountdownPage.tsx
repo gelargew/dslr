@@ -2,27 +2,95 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhotoContext } from "@/contexts/PhotoContext";
 import { getCountdownDuration } from "@/config/photobooth-config";
+import { Camera } from "lucide-react";
+
+// TypeScript declarations for the DigiCamControl API
+declare global {
+  interface Window {
+    electronAPI: {
+      capture: () => Promise<{ success: boolean; message?: string; error?: string }>;
+      checkDccStatus: () => Promise<{ connected: boolean; message?: string; error?: string }>;
+      onNewImage: (callback: (data: { original: string; processed: string }) => void) => void;
+      removeAllListeners: (channel: string) => void;
+    };
+    dccConfig: {
+      liveViewUrl: string;
+      photoUrl: string;
+      baseUrl: string;
+      captureUrl: string;
+    };
+  }
+}
 
 export default function CountdownPage() {
   const navigate = useNavigate();
   const { capturePhoto } = usePhotoContext();
   const [countdown, setCountdown] = useState(getCountdownDuration());
   const [isCapturing, setIsCapturing] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [dccConnected, setDccConnected] = useState(false);
+  const [captureStatus, setCaptureStatus] = useState<string>('');
+  const [liveViewKey, setLiveViewKey] = useState(Date.now());
+  const [shouldRefreshLiveView, setShouldRefreshLiveView] = useState(true);
 
-  // Initialize camera on component mount
+  // Check DigiCamControl status on mount
   useEffect(() => {
-    initializeCamera();
-
-    // Cleanup stream on unmount
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+    const checkDccStatus = async () => {
+      try {
+        const result = await window.electronAPI.checkDccStatus();
+        setDccConnected(result.connected);
+      } catch (error) {
+        setDccConnected(false);
       }
     };
+
+    checkDccStatus();
   }, []);
+
+  // Listen for new images from DigiCamControl
+  useEffect(() => {
+    const handleNewImage = (data: { original: string; processed: string }) => {
+      console.log('📸 New image received in countdown:', data);
+      setCaptureStatus('Photo captured successfully!');
+
+      // Convert the processed image to base64 for the photo context
+      const imageUrl = `http://localhost:3001/photos/${data.processed}`;
+
+      // Create a temporary image element to convert to base64
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Draw and crop to square
+          const size = Math.min(img.width, img.height);
+          const x = (img.width - size) / 2;
+          const y = (img.height - size) / 2;
+          ctx.drawImage(img, x, y, size, size, 0, 0, 1080, 1080);
+
+          const base64 = canvas.toDataURL('image/jpeg', 0.9);
+          capturePhoto(base64);
+
+          // Navigate to preview page after successful capture
+          navigate({ to: "/preview" });
+        }
+      };
+      img.onerror = () => {
+        console.error('Failed to load captured image');
+        // Even if capture fails, navigate to preview
+        navigate({ to: "/preview" });
+      };
+      img.src = imageUrl;
+    };
+
+    window.electronAPI.onNewImage(handleNewImage);
+
+    return () => {
+      window.electronAPI.removeAllListeners('new-image');
+    };
+  }, [capturePhoto, navigate]);
 
   // Countdown logic
   useEffect(() => {
@@ -33,84 +101,38 @@ export default function CountdownPage() {
 
       return () => clearTimeout(timer);
     } else {
-      // Countdown complete, capture photo automatically
-      handleAutoCapture();
+      // Countdown complete, stop live view refresh and capture photo
+      setShouldRefreshLiveView(false);
+      handleDigiCamControlCapture();
     }
   }, [countdown]);
 
-  const initializeCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1080 },
-          height: { ideal: 1080 },
-          facingMode: 'user'
-        },
-        audio: false
-      });
-
-      setStream(mediaStream);
-
-      // Set video stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-    } catch (err) {
-      console.error('Camera access error:', err);
-      // If camera fails, still allow countdown and navigate
-    }
-  };
-
-  const handleAutoCapture = async () => {
-    if (!videoRef.current || !canvasRef.current || isCapturing) return;
+  const handleDigiCamControlCapture = async () => {
+    if (!dccConnected || isCapturing) return;
 
     try {
       setIsCapturing(true);
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      setCaptureStatus('Capturing...');
 
-      if (!ctx) return;
-
-      // Set canvas to square dimensions
-      const size = 1080;
-      canvas.width = size;
-      canvas.height = size;
-
-      // Calculate crop area to center the video in square format
-      const videoAspect = video.videoWidth / video.videoHeight;
-      let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
-
-      if (videoAspect > 1) {
-        // Video is wider than square - crop sides
-        sourceWidth = video.videoHeight;
-        sourceX = (video.videoWidth - sourceWidth) / 2;
-      } else if (videoAspect < 1) {
-        // Video is taller than square - crop top/bottom
-        sourceHeight = video.videoWidth;
-        sourceY = (video.videoHeight - sourceHeight) / 2;
+      const result = await window.electronAPI.capture();
+      if (result.success) {
+        setCaptureStatus('Capture initiated, waiting for image...');
+        // Don't navigate here - wait for the new-image event
+      } else {
+        console.error('DigiCamControl capture failed:', result.error);
+        setCaptureStatus(`Capture failed: ${result.error}`);
+        // Even if capture fails, navigate to preview after a delay
+        setTimeout(() => {
+          navigate({ to: "/preview" });
+        }, 2000);
       }
-
-      // Draw cropped video frame to square canvas
-      ctx.drawImage(
-        video,
-        sourceX, sourceY, sourceWidth, sourceHeight, // Source (crop area)
-        0, 0, size, size // Destination (full canvas)
-      );
-
-      // Convert to base64
-      const imageData = canvas.toDataURL('image/jpeg', 0.9);
-
-      // Save photo via context
-      await capturePhoto(imageData);
-
-      // Navigate to preview page
-      navigate({ to: "/preview" });
-
     } catch (error) {
       console.error('Capture error:', error);
-      // Even if capture fails, navigate to preview
-      navigate({ to: "/preview" });
+      setCaptureStatus('Failed to capture photo');
+      // Even if capture fails, navigate to preview after a delay
+      setTimeout(() => {
+        navigate({ to: "/preview" });
+      }, 2000);
     }
   };
 
@@ -126,20 +148,26 @@ export default function CountdownPage() {
 
   return (
     <div className="relative h-screen w-full bg-black overflow-hidden">
-      {/* Webcam Background */}
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-
-      {/* Hidden canvas for capture */}
-      <canvas
-        ref={canvasRef}
-        className="hidden"
-      />
+      {/* DigiCamControl Live View Background */}
+      {dccConnected ? (
+        <img
+          src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${Date.now()}` : ''}`}
+          alt="Live View"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            // If live view fails, show a placeholder
+            target.style.display = 'none';
+          }}
+        />
+      ) : (
+        <div className="absolute inset-0 w-full h-full bg-gray-900 flex items-center justify-center">
+          <div className="text-center text-white">
+            <Camera size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-lg">Waiting for DigiCamControl...</p>
+          </div>
+        </div>
+      )}
 
       {/* Countdown Circle Overlay - Only show when countdown > 0 */}
       {countdown > 0 && (
@@ -148,6 +176,16 @@ export default function CountdownPage() {
             <div className={`text-8xl font-bold ${getCountdownColor()} transition-all duration-300 animate-pulse`}>
               {getCountdownText()}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Capture Status Overlay - Show when countdown is 0 and capturing */}
+      {countdown === 0 && captureStatus && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
+            <p className="text-lg">{captureStatus}</p>
           </div>
         </div>
       )}

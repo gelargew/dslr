@@ -80,15 +80,7 @@ interface StorageAPI {
   addToDisplayQueue(photoId: string): Promise<void>;
 }
 
-// Digicampro camera configuration
-interface DigicamproConfig {
-  liveFeedUrl: string;
-  captureUrl: string;
-  refreshRate: number; // fps
-  timeout: number; // milliseconds
-  retryAttempts: number;
-}
-
+// Basic camera permissions (for compatibility)
 interface CameraAPI {
   getPermissions(): Promise<{
     success: boolean;
@@ -100,18 +92,6 @@ interface CameraAPI {
     success: boolean;
     hasPermission: boolean;
     status?: string;
-    error?: string;
-  }>;
-  // New digicampro methods
-  captureFromServer(): Promise<{
-    success: boolean;
-    imageData?: string;
-    error?: string;
-  }>;
-  testConnection(config: DigicamproConfig): Promise<{
-    success: boolean;
-    liveFeedReachable?: boolean;
-    captureReachable?: boolean;
     error?: string;
   }>;
 }
@@ -135,10 +115,10 @@ interface GCSStorageAPI {
 interface ConfigAPI {
   getConfig(): Promise<{
     success: boolean;
-    config?: DigicamproConfig;
+    config?: any;
     error?: string;
   }>;
-  saveConfig(config: DigicamproConfig): Promise<{
+  saveConfig(config: any): Promise<{
     success: boolean;
     error?: string;
   }>;
@@ -157,14 +137,14 @@ interface ModalAPI {
   }>;
 }
 
-// DigiCamControl API
+// DigiCamControl API following documentation
 interface DigicamAPI {
   capture(): Promise<{
     success: boolean;
     message?: string;
     error?: string;
   }>;
-  checkStatus(): Promise<{
+  checkDccStatus(): Promise<{
     connected: boolean;
     message?: string;
     error?: string;
@@ -173,14 +153,12 @@ interface DigicamAPI {
   removeAllListeners(channel: string): void;
 }
 
-// DigiCamControl configuration
+// DigiCamControl configuration following documentation
 interface DccConfig {
   liveViewUrl: string;
   photoUrl: string;
   baseUrl: string;
   captureUrl: string;
-  galleryUrl: string;
-  statusUrl: string;
 }
 
 declare interface Window {
@@ -192,6 +170,6 @@ declare interface Window {
   gcsStorage: GCSStorageAPI;
   configAPI: ConfigAPI;
   modalAPI: ModalAPI;
-  digicamAPI: DigicamAPI;
+  electronAPI: DigicamAPI; // Following documentation
   dccConfig: DccConfig;
 }

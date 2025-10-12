@@ -1,20 +1,25 @@
-// Configuration IPC handlers for main process
+// Configuration IPC handlers for main process (simplified for DigiCamControl)
 import { ipcMain } from 'electron';
-import { CONFIG_CHANNELS } from './config-channels';
-import { loadConfig, saveConfig, DEFAULT_APP_CONFIG, validateConfig } from '@/config/camera-config';
 
 export function registerConfigHandlers() {
-  console.log('🔌 Registering configuration IPC handlers...');
+  console.log('🔌 Registering simplified configuration IPC handlers...');
 
-  // Get current configuration
-  ipcMain.handle(CONFIG_CHANNELS.GET_CONFIG, async () => {
+  // Get current configuration (returns hardcoded DigiCamControl config)
+  ipcMain.handle('config:get-config', async () => {
     try {
-      const config = loadConfig();
-      console.log('📋 Loaded camera configuration:', config.digicampro);
+      const hardcodedConfig = {
+        liveFeedUrl: 'http://127.0.0.1:5513/liveview.jpg',
+        captureUrl: 'http://127.0.0.1:5513/json/capture',
+        refreshRate: 20,
+        timeout: 5000,
+        retryAttempts: 3
+      };
+
+      console.log('📋 Using hardcoded DigiCamControl configuration');
 
       return {
         success: true,
-        config: config.digicampro,
+        config: hardcodedConfig,
       };
     } catch (error) {
       console.error('❌ Failed to get configuration:', error);
@@ -25,42 +30,14 @@ export function registerConfigHandlers() {
     }
   });
 
-  // Save configuration
-  ipcMain.handle(CONFIG_CHANNELS.SAVE_CONFIG, async (_, configData) => {
+  // Save configuration (no-op since we use hardcoded config)
+  ipcMain.handle('config:save-config', async (_, configData) => {
     try {
-      console.log('💾 Saving camera configuration:', configData);
+      console.log('💾 Configuration save requested (using hardcoded setup - no changes saved)');
 
-      // Validate configuration
-      const validation = validateConfig(configData);
-      if (!validation.isValid) {
-        console.error('❌ Configuration validation failed:', validation.errors);
-        return {
-          success: false,
-          error: 'Configuration validation failed: ' + validation.errors.join(', '),
-        };
-      }
-
-      // Load existing config and merge with new digicampro config
-      const existingConfig = loadConfig();
-      const newConfig = {
-        ...existingConfig,
-        digicampro: {
-          ...existingConfig.digicampro,
-          ...configData,
-        },
+      return {
+        success: true,
       };
-
-      // Save to file
-      const saved = saveConfig(newConfig);
-
-      if (saved) {
-        console.log('✅ Camera configuration saved successfully');
-        return {
-          success: true,
-        };
-      } else {
-        throw new Error('Failed to save configuration file');
-      }
     } catch (error) {
       console.error('❌ Failed to save configuration:', error);
       return {
@@ -70,21 +47,14 @@ export function registerConfigHandlers() {
     }
   });
 
-  // Reset configuration to defaults
-  ipcMain.handle(CONFIG_CHANNELS.RESET_CONFIG, async () => {
+  // Reset configuration (no-op)
+  ipcMain.handle('config:reset-config', async () => {
     try {
-      console.log('🔄 Resetting camera configuration to defaults...');
+      console.log('🔄 Configuration reset requested (using hardcoded setup)');
 
-      const saved = saveConfig(DEFAULT_APP_CONFIG);
-
-      if (saved) {
-        console.log('✅ Camera configuration reset successfully');
-        return {
-          success: true,
-        };
-      } else {
-        throw new Error('Failed to reset configuration file');
-      }
+      return {
+        success: true,
+      };
     } catch (error) {
       console.error('❌ Failed to reset configuration:', error);
       return {

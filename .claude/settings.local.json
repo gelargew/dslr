@@ -4,7 +4,10 @@
       "Bash(dir:*)",
       "Bash(npm run lint)",
       "Bash(npm run start:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)",
+      "WebFetch(domain:digicamcontrol.com)"
     ],
     "deny": [],
     "ask": []

@@ -14,8 +14,8 @@ const config: ForgeConfig = {
     appBundleId: "com.photobooth.app",
     name: "Photobooth",
     appCategoryType: "public.app-category.photography",
-    // CSP configuration for DigiCamControl external images
-    devContentSecurityPolicy: "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:; connect-src *; style-src * 'unsafe-inline';",
+      // Remove CSP configuration as shown in working example
+    // contentSecurityPolicy: false, // Disable CSP entirely as shown in working example
     extendInfo: {
       NSCameraUsageDescription: "This photobooth application needs camera access to capture photos and enable the photobooth experience.",
       NSMicrophoneUsageDescription: "This application may need microphone access for video recording features.",

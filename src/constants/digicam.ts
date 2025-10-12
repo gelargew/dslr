@@ -5,14 +5,22 @@ export const DIGICAM_CONFIG = {
   BASE_URL: 'http://127.0.0.1:5513',
 
   ENDPOINTS: {
-    CAPTURE: '/json/capture',
+    CAPTURE: '/?CMD=Capture', // Correct DigiCamControl capture endpoint
     LIVEVIEW: '/liveview.jpg',
     LIVEVIEW_JSON: '/json/liveview'
   },
 
-  // Windows-specific paths
-  WATCH_DIR: `${process.env.USERPROFILE || ''}\\Pictures\\digiCamControl`,
-  OVERLAY_PATH: `${process.env.USERPROFILE || ''}\\Pictures\\digiCamControl\\overlay.png`,
+  // Windows-specific paths - use os.homedir() for more reliable path detection
+  get WATCH_DIR() {
+    const os = require('os');
+    const path = require('path');
+    return path.join(os.homedir(), 'Pictures', 'digiCamControl', 'Session1'); // Photos go to Session1 folder
+  },
+  get OVERLAY_PATH() {
+    const os = require('os');
+    const path = require('path');
+    return path.join(os.homedir(), 'Pictures', 'digiCamControl', 'Session1', 'overlay.png');
+  },
 
   get CAPTURE_URL() { return `${this.BASE_URL}${this.ENDPOINTS.CAPTURE}`; },
   get LIVEVIEW_URL() { return `${this.BASE_URL}${this.ENDPOINTS.LIVEVIEW}`; },
@@ -43,10 +51,7 @@ export interface NewImageData {
 
 // Express server configuration for photo serving
 export const EXPRESS_CONFIG = {
-  PORT: 8777,
-  HOST: '0.0.0.0',
-  PHOTO_ROUTE: '/photos',
-  STATUS_ROUTE: '/status'
+  PORT: 8777
 };
 
 // File processing configuration

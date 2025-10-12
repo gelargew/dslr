@@ -3,6 +3,9 @@ import registerListeners from "./helpers/ipc/listeners-register";
 import { registerDatabaseHandlers } from "./helpers/ipc/database/database-main";
 import { registerStorageHandlers } from "./helpers/ipc/storage/storage-main";
 import { registerCameraHandlers } from "./helpers/ipc/camera/camera-main";
+import { registerConfigHandlers } from "./helpers/ipc/config/config-main";
+import { registerModalHandlers } from "./helpers/ipc/modal/modal-main";
+import { registerDigicamHandlers, setDigicamMainWindow, setupFileWatcher, setupExpressServer } from "./helpers/ipc/digicam/digicam-main";
 // "electron-squirrel-startup" seems broken when packaging with vite
 //import started from "electron-squirrel-startup";
 import path from "path";
@@ -16,15 +19,37 @@ function createWindow() {
     width: 1200, // Make wider for debug
     height: 800,
     webPreferences: {
-      devTools: true, // Force enable dev tools
-      contextIsolation: true,
-      nodeIntegration: true,
+      devTools: true,
+      contextIsolation: true, // Keep context isolation for security
+      nodeIntegration: false, // Keep node integration disabled
       nodeIntegrationInSubFrames: false,
       preload: preload,
+      sandbox: false, // But disable sandbox
+      // Enable media access for camera and microphone
+      enableBlinkFeatures: 'MediaDevices,GetUserMedia',
+      webSecurity: false, // Disable web security for DigiCamControl external images
+      allowRunningInsecureContent: true,
+      nodeIntegrationInWorker: true,
     },
     titleBarStyle: "hidden",
+    // For production, start with a reasonable size
+    show: false, // Don't show until ready
   });
-    registerListeners(mainWindow);
+
+  // CSP bypass for DigiCamControl images
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': undefined
+      }
+    });
+  });
+
+  // Set window reference for DigiCamControl notifications
+  setDigicamMainWindow(mainWindow);
+
+  registerListeners(mainWindow);
 
     // Register database handlers
   registerDatabaseHandlers();
@@ -35,16 +60,65 @@ function createWindow() {
   // Register camera handlers
   registerCameraHandlers();
 
+  // Register config handlers
+  registerConfigHandlers();
+
+  // Register modal handlers
+  registerModalHandlers();
+
+  // Register DigiCamControl handlers
+  registerDigicamHandlers();
+
+  // Set up DigiCamControl file watcher and Express server
+  setupFileWatcher();
+  setupExpressServer();
+
+  // Set up permission handler for media devices
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    console.log(`🔐 Permission requested: ${permission}`, details);
+
+    // Allow camera and microphone permissions automatically
+    if (permission === 'media' || permission === 'camera' || permission === 'microphone') {
+      console.log(`✅ Granting ${permission} permission`);
+      callback(true);
+    } else {
+      console.log(`❓ Unknown permission request: ${permission} - DENYING`);
+      callback(false);
+    }
+  });
+
+  // Set up permission check handler
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    console.log(`🔍 Permission check: ${permission} from ${requestingOrigin}`);
+
+    // Allow media permissions
+    if (permission === 'media' || permission === 'camera' || permission === 'microphone') {
+      return true;
+    }
+
+    return false;
+  });
+
   // Initialize database after handlers are registered
   console.log('🔌 Initializing Turso database...');
 
-  // Auto-open dev tools in development
-  if (inDevelopment) {
-    mainWindow.webContents.openDevTools();
-  }
+  // Ensure database is properly initialized for production
+  const initializeDatabase = async () => {
+    try {
+      const { photoDatabase } = await import('./helpers/database/turso-client');
+      await photoDatabase.initialize();
+      console.log('✅ Database initialized successfully');
+    } catch (error) {
+      console.error('❌ Database initialization failed:', error);
+    }
+  };
 
-  // Add keyboard shortcut to toggle dev tools
+  // Initialize database
+  initializeDatabase();
+
+  // Add keyboard shortcuts
   mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Toggle dev tools
     if (input.control && input.shift && input.key.toLowerCase() === 'i') {
       mainWindow.webContents.toggleDevTools();
     }
@@ -58,11 +132,17 @@ function createWindow() {
     );
   }
 
-  // Debug logging for development
-  if (inDevelopment) {
-    console.log('Electron main process started');
-    console.log('Dev tools enabled');
-  }
+  // Show window when ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+
+    // Auto-open dev tools only in development
+    if (inDevelopment) {
+      mainWindow.webContents.openDevTools();
+      console.log('Electron main process started');
+      console.log('Dev tools enabled');
+    }
+  });
 }
 
 async function installExtensions() {

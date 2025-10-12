@@ -1,6 +1,6 @@
 // Photobooth Application Configuration
 export const CONFIG = {
-  enableCountdown: false, // Set to false for 1-second countdown
+  enableCountdown: true, // Set to false for 1-second countdown
 };
 
 // Helper functions for ALL countdowns

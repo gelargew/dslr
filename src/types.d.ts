@@ -80,6 +80,15 @@ interface StorageAPI {
   addToDisplayQueue(photoId: string): Promise<void>;
 }
 
+// Digicampro camera configuration
+interface DigicamproConfig {
+  liveFeedUrl: string;
+  captureUrl: string;
+  refreshRate: number; // fps
+  timeout: number; // milliseconds
+  retryAttempts: number;
+}
+
 interface CameraAPI {
   getPermissions(): Promise<{
     success: boolean;
@@ -91,6 +100,18 @@ interface CameraAPI {
     success: boolean;
     hasPermission: boolean;
     status?: string;
+    error?: string;
+  }>;
+  // New digicampro methods
+  captureFromServer(): Promise<{
+    success: boolean;
+    imageData?: string;
+    error?: string;
+  }>;
+  testConnection(config: DigicamproConfig): Promise<{
+    success: boolean;
+    liveFeedReachable?: boolean;
+    captureReachable?: boolean;
     error?: string;
   }>;
 }
@@ -111,6 +132,57 @@ interface GCSStorageAPI {
   testConnection(): Promise<{ success: boolean; connected?: boolean; error?: string }>;
 }
 
+interface ConfigAPI {
+  getConfig(): Promise<{
+    success: boolean;
+    config?: DigicamproConfig;
+    error?: string;
+  }>;
+  saveConfig(config: DigicamproConfig): Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  resetConfig(): Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+}
+
+interface ModalAPI {
+  openConfig(): Promise<{
+    success: boolean;
+  }>;
+  closeConfig(): Promise<{
+    success: boolean;
+  }>;
+}
+
+// DigiCamControl API
+interface DigicamAPI {
+  capture(): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+  }>;
+  checkStatus(): Promise<{
+    connected: boolean;
+    message?: string;
+    error?: string;
+  }>;
+  onNewImage(callback: (data: { original: string; processed: string }) => void): void;
+  removeAllListeners(channel: string): void;
+}
+
+// DigiCamControl configuration
+interface DccConfig {
+  liveViewUrl: string;
+  photoUrl: string;
+  baseUrl: string;
+  captureUrl: string;
+  galleryUrl: string;
+  statusUrl: string;
+}
+
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
@@ -118,4 +190,8 @@ declare interface Window {
   cameraAPI: CameraAPI;
   photoDatabase: PhotoDatabaseAPI;
   gcsStorage: GCSStorageAPI;
+  configAPI: ConfigAPI;
+  modalAPI: ModalAPI;
+  digicamAPI: DigicamAPI;
+  dccConfig: DccConfig;
 }

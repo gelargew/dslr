@@ -1,15 +1,17 @@
 // Import dynamically to avoid bundling issues in renderer
 let createClient: any;
-let TURSO_CONFIG: any;
+
+// Embed config directly to avoid import issues in packaged app
+const TURSO_CONFIG = {
+  url: 'libsql://photobooth-db-gelargew.aws-ap-northeast-1.turso.io',
+  authToken: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU3MjMzNTMsImlkIjoiOTc0ODc3MzYtMmNmYy00Y2FkLWE2NDAtMDc1MDc5MjU2ZDhlIiwicmlkIjoiMGEwZDkwMDItY2M1OS00OGUzLWJlMWYtMzAzMWY3YzQxNmZmIn0._l8uj1A6CYRA2iMMdNbtagBuoxCWCADpRsOjT1eXIoF18wAN7YR5Npv-UN9cQwFvQERvbqr8NQPiewYZlhswCA',
+};
 
 // Dynamic imports to work around Vite bundling issues
 async function initializeClient() {
   if (!createClient) {
     const libsql = await import('@libsql/client');
     createClient = libsql.createClient;
-
-    const config = await import('../../../turso.config');
-    TURSO_CONFIG = config.TURSO_CONFIG;
   }
 }
 

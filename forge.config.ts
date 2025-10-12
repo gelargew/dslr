@@ -14,13 +14,33 @@ const config: ForgeConfig = {
     appBundleId: "com.photobooth.app",
     name: "Photobooth",
     appCategoryType: "public.app-category.photography",
+    // CSP configuration for DigiCamControl external images
+    devContentSecurityPolicy: "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:; connect-src *; style-src * 'unsafe-inline';",
     extendInfo: {
       NSCameraUsageDescription: "This photobooth application needs camera access to capture photos and enable the photobooth experience.",
       NSMicrophoneUsageDescription: "This application may need microphone access for video recording features.",
       "com.apple.security.device.camera": true,
       "com.apple.security.device.audio-input": true,
     },
+    // Windows-specific permissions
+    win32metadata: {
+      CompanyName: "Photobooth App",
+      FileDescription: "Photobooth - Interactive Photo Application",
+      InternalName: "photobooth.exe",
+      OriginalFilename: "photobooth.exe",
+      ProductName: "Photobooth",
+      ProductVersion: "1.0.0",
+      "requested-execution-level": "asInvoker",
+      FileVersion: "1.0.0",
+      LegalCopyright: "Copyright © 2025 Photobooth App"
+    },
     hardenedRuntime: false,
+    // Ignore node_modules to reduce bundle size
+    ignore: [
+      /^\/src\//,
+      /^\/\.git/,
+      /^\/node_modules\/(?!(@libsql|@google-cloud|sharp))/,
+    ],
     // osxSign: {
     //   identity: "Developer ID Application",
     //   "hardened-runtime": true,
@@ -31,7 +51,13 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({
+      // Windows Squirrel installer configuration
+      setupExe: "photobooth-setup.exe",
+      name: "photobooth",
+      // Note: setupIcon requires .ico format - will add later when available
+      // loadingGif: "public/start.png", // Remove for now as it may also cause issues
+    }),
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({}),
     new MakerDeb({}),

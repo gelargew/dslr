@@ -35,17 +35,17 @@ export default function HomePage() {
     navigate({ to: "/camera" });
   };
 
-  const handleGallery = () => {
-    navigate({ to: "/gallery" });
-  };
+  // const handleGallery = () => {
+  //   navigate({ to: "/gallery" });
+  // };
 
-  const testDebuggerToggle = () => {
-    const current = configManager.getDebuggerEnabled();
-    console.log('🧪 Test toggle - Current debugger state:', current);
-    const newState = !current;
-    const result = configManager.setDebuggerEnabled(newState);
-    console.log('🧪 Test toggle - Set result:', result, 'New state should be:', newState);
-  };
+  // const testDebuggerToggle = () => {
+  //   const current = configManager.getDebuggerEnabled();
+  //   console.log('🧪 Test toggle - Current debugger state:', current);
+  //   const newState = !current;
+  //   const result = configManager.setDebuggerEnabled(newState);
+  //   console.log('🧪 Test toggle - Set result:', result, 'New state should be:', newState);
+  // };
 
   return (
     <div className="bg-gray-900 relative size-full overflow-hidden">
@@ -81,22 +81,6 @@ export default function HomePage() {
             Start
           </Button>
 
-          <Button
-            onClick={handleGallery}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-medium text-lg md:text-xl leading-tight px-8 md:px-12 py-3 md:py-4 rounded-[20px] h-auto shadow-[inset_0_0_0_1px_rgba(255,255,255,0.20)] transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-            size="default"
-          >
-            📸 View Gallery
-          </Button>
-
-          {/* Test button for debugging */}
-          <Button
-            onClick={testDebuggerToggle}
-            className="bg-red-600 hover:bg-red-700 text-white font-medium text-lg px-6 py-2 rounded-lg"
-            size="default"
-          >
-            🧪 Toggle Debugger (Test)
-          </Button>
         </div>
       </div>
     </div>

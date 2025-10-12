@@ -75,8 +75,10 @@ if (process.platform === 'win32') {
 function createWindow() {
   const preload = path.join(__dirname, "preload.js");
   const mainWindow = new BrowserWindow({
-    width: 1200, // Make wider for debug
-    height: 800,
+    width: 1920,
+    height: 1080,
+    fullscreen: true, // Start in fullscreen mode
+    fullscreenable: true, // Allow fullscreen toggle
     webPreferences: {
       devTools: true,
       contextIsolation: true, // Keep context isolation for security

@@ -55,23 +55,23 @@ export default function EditPhotoPage() {
     }
   };
 
-  // Get proper text style using the frame's text settings (RESTORED FROM WORKING VERSION)
+  // Get proper text style using the frame's text settings (UPDATED FOR 2:3 ASPECT RATIO)
   const getTextStyle = () => {
-    if (!selectedFrame || !message || !selectedFrame.style.textSettings.enabled) return { display: 'none' };
+    if (!selectedFrame || !message || !selectedFrame.style.textSettings.enabled || selectedFrame.id === 'none') return { display: 'none' };
 
     const textSettings = selectedFrame.style.textSettings;
     return {
       position: 'absolute' as const,
-      left: `${(textSettings.position.x / 1080) * 100}%`,
-      top: `${(textSettings.position.y / 1080) * 100}%`,
+      left: `${(textSettings.position.x / 1200) * 100}%`, // Scale from 1200px width
+      top: `${(textSettings.position.y / 1800) * 100}%`, // Scale from 1800px height
       transform: 'translate(0, 0)', // No centering - start from exact position
-      fontSize: `${textSettings.fontSize * 0.37}px`, // Scale down for 400px preview (400/1080 = 0.37)
+      fontSize: `${textSettings.fontSize * 0.333}px`, // Scale down for 400px preview (400/1200 = 0.333)
       fontFamily: textSettings.fontFamily,
       color: textSettings.color,
       backgroundColor: textSettings.background || 'transparent',
-      padding: `${(textSettings.padding || 0) * 0.37}px`,
+      padding: `${(textSettings.padding || 0) * 0.333}px`,
       textAlign: textSettings.align as 'left' | 'center' | 'right',
-      maxWidth: `${(textSettings.maxWidth || 700) * 0.37}px`, // Scale max width too
+      maxWidth: `${(textSettings.maxWidth || 1000) * 0.333}px`, // Scale max width from 1000px
       wordWrap: 'break-word' as const,
       whiteSpace: 'pre-wrap' as const,
       zIndex: 10,
@@ -107,24 +107,33 @@ export default function EditPhotoPage() {
         <div className="font-['Space_Grotesk'] font-bold leading-[72px] text-[#585d68] text-[64px] text-center tracking-[-1.28px]">
           Your Photo!
         </div>
-        <div className="h-[400px] w-[400px] overflow-hidden relative rounded-3xl shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
-          <img
-            src={currentPhoto.file_path}
-            alt="Your captured photo"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+        <div className="h-[600px] w-[400px] overflow-hidden relative rounded-3xl shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
+          {/* Photo background - positioned based on frame selection */}
+          {selectedFrame && selectedFrame.id !== 'none' ? (
+            // WITH FRAME: Photo is square and centered in frame area
+            <img
+              src={currentPhoto.file_path}
+              alt="Your captured photo"
+              className="absolute left-[33px] top-[33px] w-[333px] h-[333px] object-cover"
+            />
+          ) : (
+            // NO FRAME: Photo fills entire preview area
+            <img
+              src={currentPhoto.file_path}
+              alt="Your captured photo"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
 
-          {/* Text overlay - PROPERLY POSITIONED */}
-          {selectedFrame && message && selectedFrame.style.textSettings.enabled && (
+          {/* Text overlay - STANDARDIZED POSITIONING */}
+          {selectedFrame && message && selectedFrame.style.textSettings.enabled && selectedFrame.id !== 'none' && (
             <div style={getTextStyle()}>
               {message}
             </div>
           )}
 
-
-
-          {/* Frame overlay if selected */}
-          {selectedFrame && selectedFrame.frameImage && (
+          {/* Frame overlay if selected (not for "none" frame) */}
+          {selectedFrame && selectedFrame.frameImage && selectedFrame.id !== 'none' && (
             <img
               src={selectedFrame.frameImage}
               alt="Frame overlay"

@@ -109,16 +109,15 @@ The photobooth system requires photo grouping via group codes for ALL photo-rela
 
 **Authentication:** API Key required in `x-api-key` header or `Authorization: Bearer {key}`
 
-**Query Parameters:**
-- `code` (required): Group code string to filter photo drafts by group
+**Query Parameters (choose one method):**
+- `code` (required for single code): Group code string to filter photo drafts by group
+- `codes` (required for multiple codes): JSON array of group code strings, e.g., `["ABC123", "DEF456"]`
 
-**Alternative:** You can also pass the group code via `x-group-code` header
+**Alternative:** You can also pass the group code via `x-group-code` header (only for single code requests)
 
-**Description:** Retrieves the latest photo-draft for the specified group code. Only photo drafts uploaded with the same group code will be returned.
+**Description:** Retrieves the latest photo-draft for the specified group code(s). For single code requests, returns the latest draft for that group. For multiple codes, returns an object with each code as a key and its latest draft as the value.
 
-**Response:**
-
-**Success (200):**
+**Single Code Response (200):**
 ```json
 {
   "success": true,
@@ -131,10 +130,45 @@ The photobooth system requires photo grouping via group codes for ALL photo-rela
 }
 ```
 
-**Error (400):**
+**Multiple Codes Response (200):**
 ```json
 {
-  "error": "Group code is required"
+  "success": true,
+  "data": {
+    "ABC123": {
+      "id": 1,
+      "url": "https://storage.googleapis.com/bucket/photobooth/1234567890-example.jpg",
+      "groupCode": "ABC123",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    },
+    "DEF456": {
+      "id": 2,
+      "url": "https://storage.googleapis.com/bucket/photobooth/1234567891-example.jpg",
+      "groupCode": "DEF456",
+      "createdAt": "2024-01-15T10:35:00.000Z"
+    }
+  }
+}
+```
+
+**Error (400) - Missing Parameters:**
+```json
+{
+  "error": "Group code is required. Use either \"code\" parameter for single code or \"codes\" parameter for multiple codes"
+}
+```
+
+**Error (400) - Invalid Codes Parameter:**
+```json
+{
+  "error": "Invalid codes parameter. Must be a valid JSON array of strings"
+}
+```
+
+**Error (400) - Invalid Codes Array:**
+```json
+{
+  "error": "Codes parameter must be a non-empty array of strings"
 }
 ```
 

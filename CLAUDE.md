@@ -4,12 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **dual-application DSLR photobooth system** built with Electron, React 19, and TypeScript. The system consists of:
+This is a **modular DSLR photobooth system** built with Electron, React 19, and TypeScript. The system consists of multiple independent applications that share the same codebase:
 
-1. **Photobooth App** - Interactive photo capture and editing interface
-2. **Videotron App** - Gallery display for showing captured photos
+### Application Types
 
-Both apps share the same codebase but run in different modes via command-line arguments.
+1. **Camera App** - Photo capture and basic preview flow
+   - **Flow**: HomePage → CameraPage → CountdownPage → PreviewPage → ThankYouPage → back to HomePage
+   - **Purpose**: High-volume photo capture with automatic draft upload
+   - **Features**: Live view control, photo capture, 10-second thank you countdown with draft upload
+
+2. **Edit App** - Photo editing and customization
+   - **Flow**: EditLandingPage → EditPhotoPage → EditOverlayPage → CompletePage → back to EditLandingPage
+   - **Purpose**: Photo editing with frames, text, and overlays
+   - **Features**: Fetch latest photo drafts, frame selection, text editing, icon overlay placement
+   - **Config**: Built-in configuration modal for app ID management
+
+3. **Videotron App** - Gallery display for showing captured photos
+   - **Flow**: Gallery page with infinite scrolling
+   - **Purpose**: Display captured photos on large screens
+   - **Features**: 4-row infinite scrolling grid, real-time photo synchronization
+
+### Architecture Benefits
+
+- **Independent Deployment**: Each app can be built and deployed separately
+- **Code Sharing**: Common components, hooks, and utilities are shared
+- **Mode Switching**: Easy switching between app modes during development
+- **Scalable**: New app types can be added following the same pattern
+
+All applications share the same codebase but run in different modes via configuration constants.
 
 ## Development Commands
 
@@ -58,16 +80,23 @@ npm run publish                 # Publish updates
 
 ### Application Flow
 
-#### Photobooth Workflow
-1. **Welcome** (`/`) - Landing page with start button
-2. **Camera** (`/camera`) - Webcam interface with capture functionality
-3. **Countdown** (`/countdown`) - 3-second timer before capture
-4. **Preview** (`/preview`) - Photo review with retake/finish options
-5. **Thank You** (`/thank-you`) - Confirmation with auto-return
-6. **Edit Landing** (`/edit`) - Entry point for editing flow
-7. **Edit Photo** (`/edit/photo`) - Frame selection and text input
-8. **Edit Overlay** (`/edit/overlay`) - Icon placement on photos
-9. **Complete** (`/complete`) - Final thank you and completion
+#### Camera App Workflow
+1. **Welcome** (`/`) - Landing page with start button and live view initiation
+2. **Camera** (`/camera`) - DSLR camera interface with capture and live view control
+3. **Countdown** (`/countdown`) - 3-second timer before capture with live view hidden
+4. **Preview** (`/preview`) - Photo review with retake/finish options and live view restart
+5. **Thank You** (`/thank-you`) - 10-second countdown with automatic photo draft upload
+   - Auto-redirects back to Welcome page after countdown
+   - Photo draft uploaded to backend after 2 seconds
+
+#### Edit App Workflow
+1. **Edit Landing** (`/edit`) - Entry point with configuration modal
+   - Fetches latest photo draft by app ID
+   - Built-in config modal for app ID management
+2. **Edit Photo** (`/edit/photo`) - Frame selection and text input
+3. **Edit Overlay** (`/edit/overlay`) - Icon placement on photos
+4. **Complete** (`/complete`) - Final thank you and completion
+   - Auto-redirects back to Edit Landing page
 
 #### Videotron Gallery
 - **Gallery** (`/gallery`) - 4-row infinite scrolling grid with auto-refresh
@@ -115,10 +144,31 @@ CREATE TABLE photos (
 - **Preload Script**: Exposes safe APIs to renderer process
 - **Renderer Process**: React UI with IPC communication
 
-### App Mode Detection
-The application detects its mode based on command-line arguments:
-- `npm run start` → Photobooth mode (starts at `/`)
-- `npm run start:videotron` → Videotron mode (starts at `/gallery`)
+### App Mode Configuration
+
+The system uses configuration constants to switch between different app modes:
+
+```typescript
+// src/constants/app-config.ts
+export const APP_MODE = 'CAMERA' | 'EDIT' | 'VIDEOTRON';
+export const APP_ID = 'your-app-id'; // Used for photo grouping
+```
+
+#### Current App Modes:
+- **CAMERA**: Photo capture and draft upload flow
+- **EDIT**: Photo editing with configuration management
+- **VIDEOTRON**: Gallery display mode
+
+#### Switching Between Modes:
+1. Update `APP_MODE` constant in `src/constants/app-config.ts`
+2. The routing system automatically loads the appropriate pages
+3. Each app has its own entry point and flow
+
+#### Edit App Configuration:
+- Built-in configuration modal accessible from EditLandingPage
+- Allows real-time app ID changes without rebuilding
+- Fetches photo drafts based on current app ID
+- Settings persist across app sessions
 
 ### Camera Integration
 - Uses WebRTC `getUserMedia` API through Electron IPC

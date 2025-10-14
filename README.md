@@ -1,146 +1,318 @@
-# electron-shadcn
+# Textimoni DSLR Photobooth System
 
-Electron in all its glory. Everything you will need to develop your beautiful desktop application.
+A modular DSLR photobooth system built with Electron, React 19, and TypeScript. The system consists of multiple independent applications that can be deployed separately for different use cases.
 
-![Demo GIF](https://github.com/LuanRoger/electron-shadcn/blob/main/images/demo.gif)
+## 🎯 Applications
 
-## Libs and tools
+### 1. Camera App
+- **Purpose**: High-volume photo capture with automatic draft upload
+- **Flow**: HomePage → CameraPage → CountdownPage → PreviewPage → ThankYouPage → back to HomePage
+- **Features**:
+  - DigiCamControl integration for DSLR capture
+  - Live view control (start/stop)
+  - 10-second thank you countdown with automatic photo draft upload
+  - Seamless loop back to home for continuous operation
 
-To develop a Electron app, you probably will need some UI, test, formatter, style or other kind of library or framework, so let me install and configure some of them to you.
+### 2. Edit App
+- **Purpose**: Photo editing and customization
+- **Flow**: EditLandingPage → EditPhotoPage → EditOverlayPage → CompletePage → back to EditLandingPage
+- **Features**:
+  - Fetch latest photo drafts by configurable App ID
+  - Frame selection and text editing
+  - Icon/sticker overlay placement
+  - Built-in configuration modal for App ID management
+  - Final photo upload to backend
 
-### Core 🏍️
+### 3. Videotron App
+- **Purpose**: Gallery display for large screens
+- **Flow**: Gallery page with infinite scrolling
+- **Features**:
+  - 4-row infinite scrolling photo grid
+  - Real-time photo synchronization
+  - Optimized for large display screens
 
-- [Electron 37](https://www.electronjs.org)
-- [Vite 7](https://vitejs.dev)
+## 🚀 Quick Start
 
-### DX 🛠️
+### Prerequisites
+- Node.js 18+
+- DigiCamControl software installed and running
+- Access to the backend API
 
-- [TypeScript 5.8](https://www.typescriptlang.org)
-- [Prettier](https://prettier.io)
-- [ESLint 9](https://eslint.org)
-- [Zod 4](https://zod.dev)
-- [React Query (TanStack)](https://react-query.tanstack.com)
+### Installation
 
-### UI 🎨
-
-- [React 19](https://reactjs.org)
-- [Tailwind 4](https://tailwindcss.com)
-- [Shadcn UI](https://ui.shadcn.com)
-- [Geist](https://vercel.com/font) as default font
-- [i18next](https://www.i18next.com)
-- [TanStack Router](https://tanstack.com/router)
-- [Lucide](https://lucide.dev)
-
-### Test 🧪
-
-- [Vitest](https://vitest.dev)
-- [Playwright](https://playwright.dev)
-- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro)
-
-### Packing and distribution 📦
-
-- [Electron Forge](https://www.electronforge.io)
-
-### CI/CD 🚀
-
-- Pre-configured [GitHub Actions workflow](https://github.com/LuanRoger/electron-shadcn/blob/main/.github/workflows/playwright.yml), for test with Playwright
-
-### Project preferences 🎯
-
-- Use Context isolation
-- [React Compiler](https://react.dev/learn/react-compiler) is enabled by default.
-- `titleBarStyle`: hidden (Using custom title bar)
-- Geist as default font
-- Some default styles was applied, check the [`styles`](https://github.com/LuanRoger/electron-shadcn/tree/main/src/styles) directory
-- React DevTools are installed by default
-
-## Directory structure
-
-```plaintext
-.
-└── ./src/
-    ├── ./src/assets/
-    │   └── ./src/assets/fonts/
-    ├── ./src/components/
-    │   ├── ./src/components/template
-    │   └── ./src/components/ui/
-    ├── ./src/helpers/
-    │   └── ./src/helpers/ipc/
-    ├── ./src/layout/
-    ├── ./src/lib/
-    ├── ./src/pages/
-    ├── ./src/style/
-    └── ./src/tests/
-```
-
-- `src/`: Main directory
-  - `assets/`: Store assets like images, fonts, etc.
-  - `components/`: Store UI components
-    - `template/`: Store the all not important components used by the template. It doesn't include the `WindowRegion` or the theme toggler, if you want to start an empty project, you can safely delete this directory.
-    - `ui/`: Store Shadcn UI components (this is the default direcotry used by Shadcn UI)
-  - `helpers/`: Store IPC related functions to be called in the renderer process
-    - `ipc/`: Directory to store IPC context and listener functions
-      - Some implementations are already done, like `theme` and `window` for the custom title bar
-  - `layout/`: Directory to store layout components
-  - `lib/`: Store libraries and other utilities
-  - `pages/`: Store app's pages
-  - `style/`: Store global styles
-  - `tests/`: Store tests (from Vitest and Playwright)
-
-## NPM script
-
-To run any of those scripts:
-
+1. **Clone the repository**
 ```bash
-npm run <script>
+git clone <your-repo-url>
+cd dslr
 ```
 
-- `start`: Start the app in development mode
-- `package`: Package your application into a platform-specific executable bundle and put the result in a folder.
-- `make`: Generate platform-specific distributables (e.g. .exe, .dmg, etc) of your application for distribution.
-- `publish`: Electron Forge's way of taking the artifacts generated by the `make` command and sending them to a service somewhere for you to distribute or use as updates.
-- `lint`: Run ESLint to lint the code
-- `format`: Run Prettier to check the code (it doesn't change the code)
-- `format:write`: Run Prettier to format the code
-- `test`: Run the default unit-test script (Vitest)
-- `test:watch`: Run the default unit-test script in watch mode (Vitest)
-- `test:unit`: Run the Vitest tests
-- `test:e2e`: Run the Playwright tests
-- `test:all`: Run all tests (Vitest and Playwright)
-
-> The test scripts involving Playwright require the app be builded before running the tests. So, before run the tests, run the `package`, `make` or `publish` script.
-
-## How to use
-
-1. Clone this repository
-
-```bash
-git clone https://github.com/LuanRoger/electron-shadcn.git
-```
-
-Or use it as a template on GitHub
-
-2. Install dependencies
-
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. Run the app
+3. **Configure App Mode**
+   Edit `src/constants/app-config.ts` to set your desired app mode:
+   ```typescript
+   export const APP_MODE: AppMode = 'CAMERA'; // or 'EDIT' or 'VIDEOTRON'
+   ```
 
+4. **Start the application**
 ```bash
 npm run start
 ```
 
-## Used by
+## ⚙️ App Mode Configuration
 
-- [yaste](https://github.com/LuanRoger/yaste) - yaste (Yet another super ₛᵢₘₚₗₑ text editor) is a text editor, that can be used as an alternative to the native text editor of your SO, maybe.
-- [eletric-drizzle](https://github.com/LuanRoger/electric-drizzle) - shadcn-ui and Drizzle ORM with Electron.
-- [Wordle Game](https://github.com/masonyekta/wordle-game) - A Wordle game which features interactive gameplay, cross-platform compatibility, and integration with a custom Wordle API for word validation and letter correctness.
-- [Mehr 🌟](https://github.com/xmannii/MehrLocalChat) - A modern, elegant local AI chatbot application using Electron, React, shadcn/ui, and Ollama.
+### Switching Between Apps
 
-> Does you've used this template in your project? Add it here and open a PR.
+To switch between different app modes, edit the `APP_MODE` constant in `src/constants/app-config.ts`:
 
-## License
+```typescript
+// src/constants/app-config.ts
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/LuanRoger/electron-shadcn/blob/main/LICENSE) file for details.
+// Available modes
+export type AppMode = 'CAMERA' | 'EDIT' | 'VIDEOTRON';
+
+// Change this line to switch apps
+export const APP_MODE: AppMode = 'CAMERA'; // ← Change this value
+
+// Options:
+// 'CAMERA'  - Photo capture and draft upload
+// 'EDIT'    - Photo editing with configuration
+// 'VIDEOTRON' - Gallery display
+```
+
+### Each App Mode Details
+
+#### **CAMERA Mode**
+```typescript
+export const APP_MODE: AppMode = 'CAMERA';
+```
+- **Entry Point**: Starts at HomePage (`/`)
+- **Use Case**: High-volume photobooth operation
+- **Features**: Photo capture, live view control, automatic draft upload
+
+#### **EDIT Mode**
+```typescript
+export const APP_MODE: AppMode = 'EDIT';
+```
+- **Entry Point**: Starts at EditLandingPage (`/edit`)
+- **Use Case**: Photo editing station
+- **Features**: Edit captured photos, configure App ID
+- **Config**: Built-in settings modal for App ID management
+
+#### **VIDEOTRON Mode**
+```typescript
+export const APP_MODE: AppMode = 'VIDEOTRON';
+```
+- **Entry Point**: Starts at Gallery page (`/gallery`)
+- **Use Case**: Photo display on large screens
+- **Features**: Infinite scrolling gallery, real-time updates
+
+## 📱 App ID Configuration (Edit App)
+
+The Edit App includes a built-in configuration system for managing the App ID:
+
+### What is App ID?
+- Used for grouping photos in the backend
+- Allows multiple photobooth setups to work independently
+- Controls which photo drafts are fetched for editing
+
+### How to Configure App ID
+
+1. **Start the app in EDIT mode**:
+   ```typescript
+   export const APP_MODE: AppMode = 'EDIT';
+   ```
+
+2. **Open the Settings**:
+   - Click the Settings button on EditLandingPage
+   - Enter your desired App ID (e.g., "booth-1", "event-name", etc.)
+
+3. **App ID Persistence**:
+   - App ID is automatically saved
+   - Persists across app restarts
+   - No rebuild required when changing
+
+### Use Cases for Multiple App IDs
+- **Multiple Events**: Each event gets its own App ID
+- **Multiple Booths**: Each booth location has separate App ID
+- **Testing**: Use different App IDs for testing vs production
+
+## 🛠️ Development
+
+### Available Scripts
+
+```bash
+# Development
+npm run start              # Start app in development mode (uses current APP_MODE setting)
+
+# Building (App-Specific)
+npm run build:camera       # Build Camera app only (Textimoni.exe)
+npm run build:edit         # Build Edit app only (Textimoni Editor.exe)
+npm run build:all          # Build all apps (creates separate executables)
+
+# Regular Building
+npm run package           # Package for distribution (uses current APP_MODE setting)
+npm run make              # Create installers (uses current APP_MODE setting)
+npm run publish           # Publish updates
+
+# Code Quality
+npm run lint              # ESLint code checking
+npm run format:write      # Prettier code formatting
+
+# Testing
+npm run test:unit         # Run unit tests (Vitest)
+npm run test:e2e          # Run E2E tests (Playwright)
+npm run test:all          # Run all tests
+```
+
+### Building Different Apps
+
+#### Method 1: Using Build Scripts (Recommended)
+```bash
+# Build Camera app
+npm run build:camera
+
+# Build Edit app
+npm run build:edit
+
+# Build all apps
+npm run build:all
+```
+
+#### Method 2: Manual Configuration
+1. Edit `src/constants/app-config.ts`:
+   ```typescript
+   export const APP_MODE: AppMode = 'CAMERA'; // or 'EDIT'
+   ```
+2. Run build command:
+   ```bash
+   npm run make
+   ```
+
+### Generated Files
+
+#### Camera App (`npm run build:camera`)
+- **Executable**: `Textimoni.exe`
+- **Installer**: `textimoni-setup.exe`
+- **Bundle ID**: `com.textimoni.textimoni`
+
+#### Edit App (`npm run build:edit`)
+- **Executable**: `Textimoni Editor.exe`
+- **Installer**: `textimoni-editor-setup.exe`
+- **Bundle ID**: `com.textimoni.textimoni_editor`
+
+### Technology Stack
+
+- **Electron 37** - Desktop application framework
+- **React 19** with **TypeScript 5.8** - UI framework
+- **TanStack Router** - Client-side routing
+- **shadcn/ui** + **Tailwind CSS 4** - UI components and styling
+- **Zustand** - State management
+- **Vitest** + **Playwright** - Testing frameworks
+
+### DigiCamControl Integration
+
+The system integrates with DigiCamControl for DSLR camera control:
+
+- **Live View**: Real-time camera preview via HTTP
+- **Photo Capture**: Programmatic capture through web API
+- **File Download**: Automatic download of captured photos
+- **Control Commands**: Start/stop live view functionality
+
+### Backend API Integration
+
+The system connects to a RESTful backend for:
+
+- **Photo Draft Upload**: Upload captured photos as drafts
+- **Final Photo Upload**: Upload edited photos with frames and overlays
+- **Photo Retrieval**: Fetch drafts for editing by App ID
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── ui/             # shadcn/ui components
+│   └── ConfigModal.tsx # App ID configuration modal
+├── pages/              # Route-based page components
+│   ├── HomePage.tsx     # Welcome screen
+│   ├── CameraPage.tsx   # DSLR interface
+│   ├── CountdownPage.tsx # Pre-capture countdown
+│   ├── PreviewPage.tsx  # Photo review
+│   ├── ThankYouPage.tsx # Draft upload countdown
+│   ├── EditLandingPage.tsx # Edit app entry
+│   ├── EditPhotoPage.tsx # Frame & text editing
+│   ├── EditOverlayPage.tsx # Icon placement
+│   ├── CompletePage.tsx # Final screen
+│   └── GalleryPage.tsx # Videotron gallery
+├── constants/
+│   ├── app-config.ts   # App mode configuration
+│   ├── api-constants.ts # Backend API URLs
+│   └── digicam.ts      # DigiCamControl settings
+├── helpers/            # Utility functions and IPC handlers
+├── hooks/              # Custom React hooks
+├── routes/             # TanStack Router configuration
+└── stores/             # Zustand state management
+```
+
+## 🔧 Configuration
+
+### Backend API Configuration
+
+Edit `src/constants/api-constants.ts`:
+
+```typescript
+export const API_BASE_URL = 'https://your-backend-url.com';
+export const API_KEY = 'your-api-key';
+```
+
+### DigiCamControl Configuration
+
+Edit `src/constants/digicam.ts`:
+
+```typescript
+export const DIGICAM_CONFIG = {
+  BASE_URL: 'http://127.0.0.1:5513',
+  LIVEVIEW_URL: 'http://127.0.0.1:5513/liveview.jpeg',
+  CAPTURE_URL: 'http://127.0.0.1:5513/?CMD=Capture',
+  // ... other settings
+};
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **DigiCamControl Connection Failed**
+   - Ensure DigiCamControl is running
+   - Check that WebServer plugin is enabled in DigiCamControl
+   - Verify port 5513 is available
+
+2. **Backend API Errors**
+   - Check API_BASE_URL and API_KEY configuration
+   - Verify backend server is running
+   - Check network connectivity
+
+3. **App ID Not Saving**
+   - Ensure Edit app mode is selected
+   - Check settings modal is opening properly
+   - Verify app has file system permissions
+
+4. **Live View Not Working**
+   - Check DigiCamControl live view settings
+   - Verify live view URL configuration
+   - Check for firewall blocking port 5513
+
+### Debug Mode
+
+The app includes debug features:
+- Developer tools automatically open in development
+- Console logging for all major operations
+- Status indicators for DigiCamControl connection
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

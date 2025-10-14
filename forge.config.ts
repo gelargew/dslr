@@ -14,6 +14,13 @@ const config: ForgeConfig = {
     appBundleId: "com.textimoni.photobooth",
     name: "Textimoni Photobooth",
     appCategoryType: "public.app-category.photography",
+    extraResources: [
+      {
+        from: 'src/assets',
+        to: 'assets',
+        filter: ['**/*']
+      }
+    ],
       // Remove CSP configuration as shown in working example
     // contentSecurityPolicy: false, // Disable CSP entirely as shown in working example
     extendInfo: {

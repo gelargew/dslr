@@ -45,14 +45,14 @@ export const frameTemplates: FrameTemplate[] = [
       useFrameImage: true,
       textSettings: {
         enabled: true,
-        position: { x: 24, y: 680 }, // Bottom center area of Spotify frame (square)
-        maxWidth: 700,
+        position: { x: 100, y: 1350 }, // Standardized text position for all frames
+        maxWidth: 1000, // Full inner photo width
 
-        fontSize: 32,
+        fontSize: 48, // Scaled up for larger canvas
         fontFamily: 'Geist',
         color: '#ffffff',
-        padding: 12,
-        align: 'left',
+        padding: 20, // Scaled up padding
+        align: 'center',
         editable: {
           position: true,
           color: true,
@@ -74,13 +74,13 @@ export const frameTemplates: FrameTemplate[] = [
       useFrameImage: true,
       textSettings: {
         enabled: true,
-        position: { x: 16, y: 945 }, // Bottom area of Instagram frame (square)
-        maxWidth: 700,
-        fontSize: 28,
+        position: { x: 100, y: 1350 }, // Standardized text position for all frames
+        maxWidth: 1000, // Full inner photo width
+        fontSize: 42, // Scaled up for larger canvas
         fontFamily: 'Geist',
         color: '#262626',
-        padding: 15,
-        align: 'left',
+        padding: 25, // Scaled up padding
+        align: 'center',
         editable: {
           position: true,
           color: true,
@@ -101,9 +101,9 @@ export const frameTemplates: FrameTemplate[] = [
       useFrameImage: false,
       textSettings: {
         enabled: false,
-        position: { x: 540, y: 900 },
+        position: { x: 600, y: 1600 }, // Centered position (won't be used)
         fontSize: 0,
-        fontFamily: 'Tomorrow',
+        fontFamily: 'Geist',
         color: 'transparent',
         align: 'center',
         editable: {

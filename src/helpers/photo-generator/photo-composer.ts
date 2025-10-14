@@ -22,27 +22,39 @@ export async function generateFinalPhoto(
     throw new Error('Unable to create canvas context');
   }
 
-  // Set square photo size for frames
-  canvas.width = 1080;
-  canvas.height = 1080;
+  // Set 2:3 portrait canvas size
+  canvas.width = 1200;
+  canvas.height = 1800;
 
   console.log('🎨 Generating final photo:', {
     frameTemplate: frameTemplate?.name,
     frameImage: frameTemplate?.frameImage,
     frameText,
     textSettings,
-    overlaysCount: overlays.length
+    overlaysCount: overlays.length,
+    canvasSize: `${canvas.width}x${canvas.height}`
   });
 
   try {
     // 1. Draw original photo
     console.log('📸 Loading original photo...');
     const img = await loadImage(originalPhoto);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    // Draw photo based on frame selection
+    if (frameTemplate && frameTemplate.id !== 'none') {
+      // WITH FRAME: Draw square photo at (100, 100) with 1000×1000px size
+      console.log('📐 Drawing square photo with frame...');
+      ctx.drawImage(img, 100, 100, 1000, 1000);
+    } else {
+      // NO FRAME: Draw photo filling entire canvas (1200×1800)
+      console.log('📐 Drawing full portrait photo without frame...');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+
     console.log('✅ Original photo loaded and drawn');
 
-    // 2. Apply frame if selected
-    if (frameTemplate) {
+    // 2. Apply frame if selected (not for "none" frame)
+    if (frameTemplate && frameTemplate.id !== 'none') {
       console.log('🖼️ Applying frame:', frameTemplate.name);
       await applyFrame(ctx, frameTemplate, frameText, textSettings, canvas.width, canvas.height);
       console.log('✅ Frame applied');
@@ -130,32 +142,51 @@ async function applyFrame(
   }
 }
 
-// Draw CSS-style frame (border and background)
+// Draw CSS-style frame (border and background) - Only for framed templates
 function drawCSSFrame(ctx: CanvasRenderingContext2D, style: FrameTemplate['style'], width: number, height: number) {
-  console.log('🎨 Drawing CSS frame:', {
+  console.log('🎨 Drawing standardized CSS frame:', {
+    canvasSize: `${width}x${height}`,
     borderWidth: style.borderWidth,
     borderColor: style.borderColor,
     backgroundColor: style.backgroundColor
   });
 
-  // Draw frame background if specified
+  // Draw frame background (the frame itself, not the photo area)
   if (style.backgroundColor && style.backgroundColor !== 'transparent') {
     ctx.fillStyle = style.backgroundColor;
-    ctx.fillRect(0, 0, width, height);
-    console.log('✅ Frame background drawn');
+
+    // Draw top frame (0,0) to (1200,100)
+    ctx.fillRect(0, 0, width, 100);
+
+    // Draw left frame (0,0) to (100,1800)
+    ctx.fillRect(0, 0, 100, height);
+
+    // Draw right frame (1100,0) to (1200,1800)
+    ctx.fillRect(width - 100, 0, 100, height);
+
+    // Draw bottom frame (0,1100) to (1200,1800)
+    ctx.fillRect(0, 1100, width, 700);
+
+    console.log('✅ Standardized frame background drawn');
   }
 
-  // Draw frame border
+  // Draw frame border if specified
   if (style.borderWidth > 0) {
     ctx.strokeStyle = style.borderColor;
     ctx.lineWidth = style.borderWidth;
+
+    // Draw outer border around entire canvas
     ctx.strokeRect(
       style.borderWidth / 2,
       style.borderWidth / 2,
       width - style.borderWidth,
       height - style.borderWidth
     );
-    console.log('✅ Frame border drawn');
+
+    // Draw inner border around photo area
+    ctx.strokeRect(100, 100, 1000, 1000);
+
+    console.log('✅ Frame borders drawn');
   }
 }
 
@@ -193,14 +224,14 @@ function drawFrameText(
   const textX = position.x;
   const textY = position.y;
 
-    // Always use 700px width for text wrapping
-  const fixedWidth = 700;
+    // Always use 1000px width for text wrapping (standardized for all frames)
+  const fixedWidth = 1000;
   drawWrappedText(ctx, text, textX, textY, fixedWidth, fontSize);
 
   ctx.restore();
 }
 
-// Helper function to draw wrapped text with fixed 700px width
+// Helper function to draw wrapped text with standardized 1000px width
 function drawWrappedText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -213,7 +244,7 @@ function drawWrappedText(
   let line = '';
   const lines: string[] = [];
 
-  console.log('📝 Drawing text with fixed width:', fixedWidth, 'px at position:', x, y);
+  console.log('📝 Drawing text with standardized width:', fixedWidth, 'px at position:', x, y);
 
   // Calculate lines to fit within fixed width
   for (let n = 0; n < words.length; n++) {
@@ -238,7 +269,7 @@ function drawWrappedText(
     }
   });
 
-  console.log('✅ Text drawn with fixed 700px width:', lines.length, 'lines');
+  console.log('✅ Text drawn with standardized 1000px width:', lines.length, 'lines');
 }
 
 // Draw overlay icon on the canvas
@@ -309,7 +340,7 @@ async function loadSVGAsImage(svgPath: string): Promise<HTMLImageElement> {
   });
 }
 
-// Preview function for real-time editing (optional optimization)
+// Preview function for real-time editing (2:3 aspect ratio)
 export function generateQuickPreview(
   photoElement: HTMLImageElement,
   frameTemplate?: FrameTemplate,
@@ -321,22 +352,31 @@ export function generateQuickPreview(
 
   if (!ctx) return '';
 
-  // Use smaller square size for preview
-  canvas.width = 450;
-  canvas.height = 450;
+  // Use 2:3 portrait size for preview (400×600px)
+  canvas.width = 400;
+  canvas.height = 600;
 
   try {
-    // Draw scaled photo
-    ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height);
+    // Draw photo based on frame selection
+    if (frameTemplate && frameTemplate.id !== 'none') {
+      // WITH FRAME: Draw square photo scaled to frame area
+      const frameAreaX = (100 / 1200) * canvas.width;  // 33px
+      const frameAreaY = (100 / 1800) * canvas.height; // 33px
+      const frameSize = (1000 / 1200) * canvas.width;  // 333px
+      ctx.drawImage(photoElement, frameAreaX, frameAreaY, frameSize, frameSize);
+    } else {
+      // NO FRAME: Draw photo filling entire preview canvas
+      ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height);
+    }
 
     // Apply frame (scaled down)
-    if (frameTemplate) {
+    if (frameTemplate && frameTemplate.id !== 'none') {
       const scaledTextSettings = textSettings ? {
         position: {
-          x: (textSettings.position.x / 1080) * canvas.width,
-          y: (textSettings.position.y / 1080) * canvas.height,
+          x: (textSettings.position.x / 1200) * canvas.width,   // Scale from 1200px width
+          y: (textSettings.position.y / 1800) * canvas.height, // Scale from 1800px height
         },
-        fontSize: (textSettings.fontSize / 1080) * canvas.width,
+        fontSize: (textSettings.fontSize / 1200) * canvas.width, // Scale font size
         color: textSettings.color,
       } : undefined;
 

@@ -17,9 +17,11 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   // Zustand actions
   const setDebuggerEnabled = useConfigStore((state) => state.setDebuggerEnabled);
   const setDigicamBaseUrl = useConfigStore((state) => state.setDigicamBaseUrl);
+  const setAppId = useConfigStore((state) => state.setAppId);
 
   const [tempDebuggerEnabled, setTempDebuggerEnabled] = useState(debuggerEnabled);
   const [tempDigicamUrl, setTempDigicamUrl] = useState(digicamBaseUrl);
+  const [tempAppId, setTempAppId] = useState(appId);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -27,7 +29,8 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   useEffect(() => {
     setTempDebuggerEnabled(debuggerEnabled);
     setTempDigicamUrl(digicamBaseUrl);
-  }, [debuggerEnabled, digicamBaseUrl]);
+    setTempAppId(appId);
+  }, [debuggerEnabled, digicamBaseUrl, appId]);
 
   const handleDebuggerToggle = (enabled: boolean) => {
     setTempDebuggerEnabled(enabled);
@@ -36,6 +39,11 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
 
   const handleUrlChange = (url: string) => {
     setTempDigicamUrl(url);
+    setTestResult(null); // Clear previous test results
+  };
+
+  const handleAppIdChange = (id: string) => {
+    setTempAppId(id);
     setTestResult(null); // Clear previous test results
   };
 
@@ -92,9 +100,19 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
     try {
       new URL(tempDigicamUrl);
 
+      // Validate App ID (not empty)
+      if (!tempAppId.trim()) {
+        setTestResult({
+          success: false,
+          message: '❌ PIN cannot be empty. Please enter a valid PIN.'
+        });
+        return;
+      }
+
       console.log('💾 SettingsDialog: Saving configuration...', {
         debuggerEnabled: tempDebuggerEnabled,
-        digicamUrl: tempDigicamUrl
+        digicamUrl: tempDigicamUrl,
+        appId: tempAppId
       });
 
       // Save to Zustand store
@@ -103,6 +121,9 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
 
       setDigicamBaseUrl(tempDigicamUrl);
       console.log('💾 SettingsDialog: DigiCamControl URL saved');
+
+      setAppId(tempAppId.trim());
+      console.log('💾 SettingsDialog: App ID saved');
 
       onClose();
 
@@ -117,12 +138,14 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   const handleReset = () => {
     setTempDebuggerEnabled(true);
     setTempDigicamUrl('http://127.0.0.1:5513');
+    setTempAppId('');
     setTestResult(null);
   };
 
   const handleCancel = () => {
     setTempDebuggerEnabled(debuggerEnabled);
     setTempDigicamUrl(digicamBaseUrl);
+    setTempAppId(appId);
     setTestResult(null);
     onClose();
   };
@@ -164,10 +187,16 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
             </Button>
           </div>
 
-          {/* App ID */}
+          {/* PIN */}
           <div className="mt-4 bg-white/20 rounded-lg p-3">
-            <div className="text-sm opacity-90">App ID</div>
-            <div className="font-mono text-lg font-bold">{appId}</div>
+            <div className="text-sm opacity-90">PIN</div>
+            <input
+              type="text"
+              value={tempAppId}
+              onChange={(e) => handleAppIdChange(e.target.value)}
+              placeholder="Enter PIN"
+              className="w-full px-3 py-1 bg-white/30 border border-white/40 rounded text-white font-mono text-lg font-bold placeholder-white/60 focus:ring-2 focus:ring-white/50 focus:border-transparent"
+            />
           </div>
         </div>
 

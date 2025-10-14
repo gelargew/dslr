@@ -9,7 +9,8 @@
       "Bash(echo:*)",
       "WebFetch(domain:digicamcontrol.com)",
       "Bash(npm run make:*)",
-      "Bash(npm run package:*)"
+      "Bash(npm run package:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []

@@ -4,8 +4,8 @@
 import { PhotoRecord, CreatePhotoEditData, PhotoEditRecord, GeneratedPhotoMetadata, TextSettings } from '@/types/photobooth';
 
 // Mock photo storage
-let mockPhotos: PhotoRecord[] = [];
-let mockPhotoEdits: PhotoEditRecord[] = [];
+const mockPhotos: PhotoRecord[] = [];
+const mockPhotoEdits: PhotoEditRecord[] = [];
 
 // Generate mock ID
 function generateId(): string {

@@ -73,7 +73,7 @@ export async function generateFinalPhoto(
   }
 }
 
-// Helper function to load image
+// Helper function to load image (handles both local and remote URLs)
 async function loadImage(src: string): Promise<HTMLImageElement> {
   console.log('🔄 Loading image:', src);
 
@@ -285,10 +285,22 @@ async function drawOverlay(ctx: CanvasRenderingContext2D, overlay: IconOverlay) 
     // For SVG icons, we need to convert them to images
     const img = await loadSVGAsImage(icon.iconPath);
 
+    // Constrain position within canvas bounds (1200×1800)
+    const halfSize = overlay.size / 2;
+    const constrainedPosition = {
+      x: Math.max(halfSize, Math.min(1200 - halfSize, overlay.position.x)),
+      y: Math.max(halfSize, Math.min(1800 - halfSize, overlay.position.y))
+    };
+
+    // Log if position was constrained
+    if (constrainedPosition.x !== overlay.position.x || constrainedPosition.y !== overlay.position.y) {
+      console.log('📐 Constrained icon position from', overlay.position, 'to', constrainedPosition);
+    }
+
     ctx.save();
 
-    // Apply transformations
-    ctx.translate(overlay.position.x, overlay.position.y);
+    // Apply transformations with constrained position
+    ctx.translate(constrainedPosition.x, constrainedPosition.y);
     ctx.rotate((overlay.rotation * Math.PI) / 180);
 
     // Draw the icon centered at the position
@@ -301,7 +313,7 @@ async function drawOverlay(ctx: CanvasRenderingContext2D, overlay: IconOverlay) 
     );
 
     ctx.restore();
-    console.log('✅ Overlay drawn successfully');
+    console.log('✅ Overlay drawn successfully at', constrainedPosition);
   } catch (error) {
     console.warn(`❌ Failed to draw overlay ${overlay.iconId}:`, error);
   }

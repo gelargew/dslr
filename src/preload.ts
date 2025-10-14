@@ -62,10 +62,11 @@ contextBridge.exposeInMainWorld('httpAPI', {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('code', groupCode);
+      formData.append('pin', groupCode);
 
       const headers = {
         'x-api-key': API_KEY,
+        'x-device-pin': groupCode,
       };
 
       fetch(`${API_BASE_URL}${API_ENDPOINTS.UPLOAD_PHOTO_DRAFT}`, {
@@ -84,12 +85,13 @@ contextBridge.exposeInMainWorld('httpAPI', {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('code', groupCode);
+      formData.append('pin', groupCode);
       if (frame) formData.append('frame', frame);
       if (iconData) formData.append('iconData', iconData);
 
       const headers = {
         'x-api-key': API_KEY,
+        'x-device-pin': groupCode,
       };
 
       fetch(`${API_BASE_URL}${API_ENDPOINTS.UPLOAD_PHOTO}`, {
@@ -108,6 +110,7 @@ contextBridge.exposeInMainWorld('httpAPI', {
     return new Promise((resolve, reject) => {
       const headers = {
         'x-api-key': API_KEY,
+        'x-device-pin': groupCode,
       };
 
       fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_PHOTO_DRAFTS}?code=${encodeURIComponent(groupCode)}`, {
@@ -125,6 +128,7 @@ contextBridge.exposeInMainWorld('httpAPI', {
     return new Promise((resolve, reject) => {
       const headers = {
         'x-api-key': API_KEY,
+        'x-device-pin': groupCode,
       };
 
       fetch(`${API_BASE_URL}${API_ENDPOINTS.GET_PHOTOS}?code=${encodeURIComponent(groupCode)}`, {

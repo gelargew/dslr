@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhoto } from "@/hooks/usePhoto";
 import { useEdit } from "@/hooks/useEdit";
-import { FrameTemplate, frameTemplates } from "@/assets/frames/frame-templates";
+import { useFrames } from "@/hooks/useFrames";
+import { FrameTemplate } from "@/assets/frames/frame-templates";
 
 export default function EditPhotoPage() {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ export default function EditPhotoPage() {
     setSelectedFrame,
     setFrameText
   } = useEdit();
+
+  // Load frames from backend
+  const { frames, loading: framesLoading, error: framesError } = useFrames();
 
   // Local state
   const [message, setMessage] = useState<string>("");
@@ -28,12 +32,12 @@ export default function EditPhotoPage() {
 
   // Set default frame if none selected (prefer frames with text enabled)
   useEffect(() => {
-    if (!selectedFrame && frameTemplates.length > 0) {
+    if (!selectedFrame && frames.length > 0) {
       // Find a frame with text enabled, or fallback to first frame
-      const frameWithText = frameTemplates.find(frame => frame.style.textSettings.enabled);
-      setSelectedFrame(frameWithText || frameTemplates[0]);
+      const frameWithText = frames.find(frame => frame.style.textSettings.enabled);
+      setSelectedFrame(frameWithText || frames[0]);
     }
-  }, [selectedFrame, setSelectedFrame]);
+  }, [selectedFrame, setSelectedFrame, frames]);
 
   const handleNext = () => {
     // Save message to frame text
@@ -180,16 +184,17 @@ export default function EditPhotoPage() {
           <div className="flex-1 w-full">
             {/* Template Grid */}
             <div className="grid grid-cols-2 gap-4 w-full h-full">
-              {frameTemplates.slice(0, 4).map((template) => (
+              {frames.slice(0, 4).map((template) => (
                 <div
                   key={template.id}
                   onClick={() => handleFrameSelect(template)}
-                  className={`aspect-square bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
+                  className={`aspect-[2/3] bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
                     selectedFrame?.id === template.id
                       ? 'ring-4 ring-blue-500 scale-105'
                       : 'hover:scale-102'
                   }`}
-                  style={{ backgroundImage: `url('${template.frameImage}')` }}
+                  style={{ backgroundImage: `url('${template.frameImage || template.previewImage}')` }}
+                  title={template.name}
                 >
                   {/* Template preview content can go here */}
                 </div>

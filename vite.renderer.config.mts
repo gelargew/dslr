@@ -11,21 +11,15 @@ export default defineConfig({
         plugins: [["babel-plugin-react-compiler"]],
       },
     }),
-    resolve: {
-      preserveSymlinks: true,
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
-      assetFileExtensions: ['.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.webp', '.webm'],
-      publicDir: 'public',
-      output: {
-        assetFileExtensions: ['.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.webp', '.webm'],
-      },
-    },
+  ],
   resolve: {
     preserveSymlinks: true,
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    assetFileExtensions: ['.png', '.jpg', '.jpeg', '.svg', '.gif', '.ico', '.webp', '.webm'],
+  },
+  publicDir: 'public',
 });

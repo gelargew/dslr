@@ -31,102 +31,40 @@ export interface FrameStyleConfig {
   };
 }
 
-export const frameTemplates: FrameTemplate[] = [
-  {
-    id: 'spotify',
-    name: 'Spotify Style',
-    category: 'social',
-    previewImage: '/assets/frames/previews/spotify-preview.png',
-    frameImage: '/assets/frames/frame-spotify.png', // User can replace with frame-spotify.png
-    cssClass: 'frame-spotify',
-    style: {
-      borderWidth: 0,
-      borderColor: 'transparent',
-      useFrameImage: true,
-      textSettings: {
-        enabled: true,
-        position: { x: 100, y: 1350 }, // Standardized text position for all frames
-        maxWidth: 1000, // Full inner photo width
+// Dynamic frame templates will be loaded from backend API
+// This now serves as a fallback and interface definition
+export const frameTemplates: FrameTemplate[] = [];
 
-        fontSize: 48, // Scaled up for larger canvas
-        fontFamily: 'Geist',
-        color: '#ffffff',
-        padding: 20, // Scaled up padding
-        align: 'center',
-        editable: {
-          position: true,
-          color: true,
-          size: true,
-        },
-      },
-    },
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram Style',
-    category: 'social',
-    previewImage: '/assets/frames/previews/instagram-preview.png',
-    frameImage: '/assets/frames/frame-instagram.png', // User can replace with frame-instagram.png
-    cssClass: 'frame-instagram',
-    style: {
-      borderWidth: 0,
-      borderColor: 'transparent',
-      useFrameImage: true,
-      textSettings: {
-        enabled: true,
-        position: { x: 100, y: 1350 }, // Standardized text position for all frames
-        maxWidth: 1000, // Full inner photo width
-        fontSize: 42, // Scaled up for larger canvas
-        fontFamily: 'Geist',
-        color: '#262626',
-        padding: 25, // Scaled up padding
-        align: 'center',
-        editable: {
-          position: true,
-          color: true,
-          size: true,
-        },
-      },
-    },
-  },
-  {
-    id: 'none',
-    name: 'No Frame',
-    category: 'basic',
-    previewImage: '/assets/frames/previews/no-frame.png',
-    cssClass: 'frame-none',
-    style: {
-      borderWidth: 0,
-      borderColor: 'transparent',
-      useFrameImage: false,
-      textSettings: {
-        enabled: false,
-        position: { x: 600, y: 1600 }, // Centered position (won't be used)
-        fontSize: 0,
-        fontFamily: 'Geist',
-        color: 'transparent',
-        align: 'center',
-        editable: {
-          position: false,
-          color: false,
-          size: false,
-        },
-      },
-    },
-  },
-];
+/**
+ * Load frame templates dynamically from API
+ * This replaces the static array with API-loaded data
+ */
+export const loadFrameTemplates = async (): Promise<FrameTemplate[]> => {
+  const { frameService } = await import('@/services/frameService');
+  return frameService.loadFrames();
+};
 
-// Helper function to get frame by ID
+/**
+ * Get frame by ID (works with both static and dynamic data)
+ */
 export function getFrameById(id: string): FrameTemplate | undefined {
+  // Note: This function is kept for backward compatibility
+  // In practice, use the useFrames hook for dynamic loading
   return frameTemplates.find(frame => frame.id === id);
 }
 
-// Helper function to get frames by category
+/**
+ * Get frames by category (works with both static and dynamic data)
+ */
 export function getFramesByCategory(category: string): FrameTemplate[] {
+  // Note: This function is kept for backward compatibility
+  // In practice, use the useFramesByCategory hook for dynamic loading
   return frameTemplates.filter(frame => frame.category === category);
 }
 
-// Helper function to get default text settings for a frame
+/**
+ * Get default text settings for a frame
+ */
 export function getDefaultTextSettings(frameId: string) {
   const frame = getFrameById(frameId);
   if (!frame || !frame.style.textSettings.enabled) return null;
@@ -137,3 +75,6 @@ export function getDefaultTextSettings(frameId: string) {
     color: frame.style.textSettings.color,
   };
 }
+
+// Export types for backward compatibility
+export type { FrameTemplate, FrameStyleConfig };

@@ -54,6 +54,12 @@ export class FrameService extends BaseService {
       this.lastFetch = Date.now();
 
       console.log(`✅ Frames loaded successfully: ${allFrames.length} total frames`);
+
+      // Debug log text positions
+      allFrames.forEach((frame, index) => {
+        console.log(`📝 Frame ${index + 1} "${frame.name}" text position:`, frame.style.textSettings.position);
+      });
+
       return allFrames;
     } catch (error) {
       console.warn('⚠️ Failed to load frames from API, using fallback');
@@ -81,7 +87,7 @@ export class FrameService extends BaseService {
       style: {
         textSettings: {
           enabled: true,
-          position: { x: 100, y: 1350 }, // Standardized position from FRAME_STANDARDIZATION.md
+          position: { x: 90, y: 880 }, // Updated for 1080x1080 square canvas format
           fontSize: 48, // Standard font size
           fontFamily: 'Geist',
           color: '#ffffff', // Default white color
@@ -104,7 +110,7 @@ export class FrameService extends BaseService {
       style: {
         textSettings: {
           enabled: false,
-          position: { x: 600, y: 1600 }, // Centered position (won't be used)
+          position: { x: 540, y: 880 }, // Centered position for 1080x1080 canvas (won't be used)
           fontSize: 0,
           fontFamily: 'Geist',
           color: 'transparent',
@@ -132,7 +138,7 @@ export class FrameService extends BaseService {
         style: {
           textSettings: {
             enabled: true,
-            position: { x: 100, y: 1350 },
+            position: { x: 90, y: 880 }, // Updated for 1080x1080 square canvas format
             fontSize: 48,
             fontFamily: 'Geist',
             color: '#ffffff',

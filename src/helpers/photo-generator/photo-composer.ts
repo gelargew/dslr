@@ -23,9 +23,9 @@ export async function generateFinalPhoto(
     throw new Error('Unable to create canvas context');
   }
 
-  // Set 2:3 portrait canvas size
-  canvas.width = 1200;
-  canvas.height = 1800;
+  // Set square canvas size
+  canvas.width = 1080;
+  canvas.height = 1080;
 
   console.log('🎨 Generating final photo:', {
     frameTemplate: frameTemplate?.name,
@@ -38,6 +38,9 @@ export async function generateFinalPhoto(
     overlays: overlays.map(o => ({ id: o.id, iconId: o.iconId, position: o.position }))
   });
 
+  console.log('📝 Text received in photo composer:', frameText);
+  console.log('📝 Text settings received in photo composer:', textSettings);
+
   try {
     // 1. Draw original photo
     console.log('📸 Loading original photo...');
@@ -45,24 +48,51 @@ export async function generateFinalPhoto(
 
     // Draw photo based on frame selection
     if (frameTemplate && frameTemplate.id !== 'none') {
-      // WITH FRAME: Draw square photo at (100, 100) with 1000×1000px size
-      console.log('📐 Drawing square photo with frame...');
-      ctx.drawImage(img, 100, 100, 1000, 1000);
+      // WITH FRAME: Draw photo at (90, 90) with 900×760px size
+      console.log('📐 Drawing photo with frame...');
+      ctx.drawImage(img, 90, 90, 900, 760);
     } else {
-      // NO FRAME: Draw photo filling entire canvas (1200×1800)
-      console.log('📐 Drawing full portrait photo without frame...');
+      // NO FRAME: Draw photo filling entire canvas (1080×1080)
+      console.log('📐 Drawing full square photo without frame...');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
     console.log('✅ Original photo loaded and drawn');
 
-    // 2. Apply frame if selected (not for "none" frame)
+    // 2. Apply frame if selected, or just draw text if no frame
+    console.log('🔍 Text rendering decision:', {
+      hasFrameTemplate: !!frameTemplate,
+      frameTemplateId: frameTemplate?.id,
+      hasFrameText: !!frameText,
+      frameTextLength: frameText?.length,
+      frameTextTrimmed: frameText?.trim(),
+      hasTextSettings: !!textSettings,
+      textSettings
+    });
+
     if (frameTemplate && frameTemplate.id !== 'none') {
       console.log('🖼️ Applying frame:', frameTemplate.name, 'frameImage:', frameTemplate.frameImage);
       await applyFrame(ctx, frameTemplate, frameText, textSettings, canvas.width, canvas.height);
       console.log('✅ Frame applied');
+    } else if (frameText && frameText.trim().length > 0) {
+      console.log('🖼️ No frame selected, but text found - drawing text only');
+      // Draw text without frame overlay
+      const fallbackFrame: FrameTemplate = {
+        id: 'none',
+        name: 'No Frame',
+        frameImage: '',
+        previewImage: '',
+        style: {
+          textSettings: {
+            enabled: true,
+            position: { x: 90, y: 880, fontSize: 36, color: 'white', fontFamily: 'Arial, sans-serif' }
+          }
+        }
+      };
+      drawFrameText(ctx, frameText, fallbackFrame, textSettings);
+      console.log('✅ Text drawn without frame');
     } else {
-      console.log('⏭️ No frame selected, skipping frame application');
+      console.log('⏭️ No frame and no text selected');
     }
 
     // 3. Add overlay icons
@@ -144,15 +174,25 @@ async function applyFrame(
     hasText: !!text,
     textLength: text?.length,
     textEnabled: style.textSettings.enabled,
-    textSettings
+    textSettings,
+    text
   });
 
-  if (text && style.textSettings.enabled) {
+  // Always draw text if it exists, regardless of frame text settings enabled flag
+  console.log('🔍 Text drawing check in applyFrame:', {
+    text,
+    textLength: text?.length,
+    textTrimmed: text?.trim(),
+    textTrimmedLength: text?.trim()?.length,
+    condition: text && text.trim().length > 0
+  });
+
+  if (text && text.trim().length > 0) {
     console.log('📝 Drawing frame text:', text, 'at position:', textSettings?.position);
-          drawFrameText(ctx, text, frame, textSettings);
+    drawFrameText(ctx, text, frame, textSettings);
     console.log('✅ Frame text drawn');
   } else {
-    console.log('⏭️ No text to draw or text settings disabled');
+    console.log('⏭️ No text to draw (empty or undefined)');
   }
 }
 
@@ -168,31 +208,42 @@ function drawFrameText(
 
   ctx.save();
 
-  // Use custom text settings if provided, otherwise use frame defaults
-  const position = textSettings?.position || style.textSettings.position;
-  const fontSize = textSettings?.fontSize || style.textSettings.fontSize;
-  const color = textSettings?.color || style.textSettings.color;
+  // Use fixed text settings for final output (36px white text)
+  // Default position for our new text area: x:90, y:880
+  const position = textSettings?.position || style.textSettings.position || { x: 90, y: 880 };
+  const fontSize = 36; // Fixed 36px font size for visibility
+  const color = 'white'; // Fixed white color for contrast
 
-  console.log('📝 Drawing text:', {
+  // Defensive fallback for font family
+  const fontFamily = style.textSettings.fontFamily || 'Arial, sans-serif';
+
+  console.log('📝 Drawing text with fixed styling:', {
     text,
     position,
     fontSize,
     color,
-    fontFamily: style.textSettings.fontFamily
+    fontFamily,
+    originalFontFamily: style.textSettings.fontFamily
   });
 
     // Set text styling
-  ctx.font = `${fontSize}px ${style.textSettings.fontFamily}`;
+  ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textAlign = 'left'; // Always align text to the left for consistent positioning
   ctx.textBaseline = 'top'; // Use top baseline for consistent line positioning
+
+  // Add text shadow for better visibility
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
 
   // Text position
   const textX = position.x;
   const textY = position.y;
 
-  // Always use 1000px width for text wrapping (standardized for all frames)
-  const fixedWidth = 1000;
+  // Always use 900px width for text wrapping (standardized for all frames)
+  const fixedWidth = 900;
   drawWrappedText(ctx, text, textX, textY, fixedWidth, fontSize);
 
   ctx.restore();
@@ -236,7 +287,7 @@ function drawWrappedText(
     }
   });
 
-  console.log('✅ Text drawn with standardized 1000px width:', lines.length, 'lines');
+  console.log('✅ Text drawn with standardized 900px width:', lines.length, 'lines');
 }
 
 // Draw overlay icon on the canvas
@@ -260,11 +311,11 @@ async function drawOverlay(ctx: CanvasRenderingContext2D, overlay: IconOverlay, 
       img = await loadImage(icon.iconPath);
     }
 
-    // Constrain position within canvas bounds (1200×1800)
+    // Constrain position within canvas bounds (1080×1080)
     const halfSize = overlay.size / 2;
     const constrainedPosition = {
-      x: Math.max(halfSize, Math.min(1200 - halfSize, overlay.position.x)),
-      y: Math.max(halfSize, Math.min(1800 - halfSize, overlay.position.y))
+      x: Math.max(halfSize, Math.min(1080 - halfSize, overlay.position.x)),
+      y: Math.max(halfSize, Math.min(1080 - halfSize, overlay.position.y))
     };
 
     // Log if position was constrained
@@ -339,18 +390,19 @@ export function generateQuickPreview(
 
   if (!ctx) return '';
 
-  // Use 2:3 portrait size for preview (400×600px)
+  // Use square size for preview (400×400px)
   canvas.width = 400;
-  canvas.height = 600;
+  canvas.height = 400;
 
   try {
     // Draw photo based on frame selection
     if (frameTemplate && frameTemplate.id !== 'none') {
-      // WITH FRAME: Draw square photo scaled to frame area
-      const frameAreaX = (100 / 1200) * canvas.width;  // 33px
-      const frameAreaY = (100 / 1800) * canvas.height; // 33px
-      const frameSize = (1000 / 1200) * canvas.width;  // 333px
-      ctx.drawImage(photoElement, frameAreaX, frameAreaY, frameSize, frameSize);
+      // WITH FRAME: Draw photo scaled to frame area
+      const frameAreaX = (90 / 1080) * canvas.width;   // 33px
+      const frameAreaY = (90 / 1080) * canvas.height;  // 33px
+      const frameWidth = (900 / 1080) * canvas.width;  // 333px
+      const frameHeight = (760 / 1080) * canvas.height; // 281px
+      ctx.drawImage(photoElement, frameAreaX, frameAreaY, frameWidth, frameHeight);
     } else {
       // NO FRAME: Draw photo filling entire preview canvas
       ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height);
@@ -360,10 +412,10 @@ export function generateQuickPreview(
     if (frameTemplate && frameTemplate.id !== 'none') {
       const scaledTextSettings = textSettings ? {
         position: {
-          x: (textSettings.position.x / 1200) * canvas.width,   // Scale from 1200px width
-          y: (textSettings.position.y / 1800) * canvas.height, // Scale from 1800px height
+          x: (textSettings.position.x / 1080) * canvas.width,   // Scale from 1080px width
+          y: (textSettings.position.y / 1080) * canvas.height, // Scale from 1080px height
         },
-        fontSize: (textSettings.fontSize / 1200) * canvas.width, // Scale font size
+        fontSize: (textSettings.fontSize / 1080) * canvas.width, // Scale font size
         color: textSettings.color,
       } : undefined;
 

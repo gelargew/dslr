@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import startImage from '/start.png';
 import { configManager } from '@/services/config-manager';
+import { useEdit } from "@/hooks/useEdit";
 
 // TypeScript declarations for the DigiCamControl API
 declare global {
@@ -16,9 +17,14 @@ declare global {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { clearEdit } = useEdit();
 
   const handleStart = async () => {
     try {
+      // Clear edit state before starting new session
+      console.log('🧹 Clearing edit state for new session...');
+      clearEdit();
+
       // Start live view before navigating to camera
       console.log('🎬 Starting live view from homepage...');
       const result = await window.electronAPI.startLiveView();

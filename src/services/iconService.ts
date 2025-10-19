@@ -74,7 +74,7 @@ export class IconService extends BaseService {
       iconPath: backendIcon.url,
       iconType: 'png', // Assume PNG for backend images
       defaultSize: 80, // Standard default size
-      defaultPosition: { x: 600, y: 400 }, // Centered position for 1200×1800 canvas
+      defaultPosition: { x: 540, y: 540 }, // Centered position for 1080×1080 canvas
     };
   }
 

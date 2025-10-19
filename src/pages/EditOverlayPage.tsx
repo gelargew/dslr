@@ -18,9 +18,9 @@ export default function EditOverlayPage() {
   // Load icons from backend
   const { icons, loading: iconsLoading, error: iconsError } = useIcons();
 
-  // Canvas dimensions for the new 2:3 system
-  const canvasWidth = 1200;
-  const canvasHeight = 1800;
+  // Canvas dimensions for the new square system
+  const canvasWidth = 1080;
+  const canvasHeight = 1080;
 
   // Initialize icon dragging hook
   const {
@@ -71,17 +71,21 @@ export default function EditOverlayPage() {
       console.log('🎨 Generating final photo with edits...');
       console.log('📸 Current photo:', currentPhoto.id);
       console.log('🖼️ Edit state:', editState);
+      console.log('📝 Edit state frameText:', editState.frameText);
 
       // Prepare edit data from current edit state
       const editData = {
         photoId: currentPhoto.id,
         frameTemplateId: editState.selectedFrame?.id || undefined,
         frameText: editState.frameText || undefined,
+        text: editState.frameText || '', // Add text field for backend
         textSettings: editState.selectedFrame?.style?.textSettings || undefined,
         overlays: editState.overlays || [],
       };
 
       console.log('💾 Preparing edit data:', editData);
+      console.log('📝 Text being sent to photo composer:', editData.frameText);
+      console.log('📝 textSettings being sent to photo composer:', editData.textSettings);
 
       // Generate the final photo with frame and overlays
       const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData, editState.selectedFrame, icons);
@@ -121,6 +125,7 @@ export default function EditOverlayPage() {
         photoId: currentPhoto.id,
         frameTemplateId: editState.selectedFrame?.id || undefined,
         frameText: editState.frameText || undefined,
+        text: editState.frameText || '', // Add text field for backend
         textSettings: editState.selectedFrame?.style?.textSettings || undefined,
         overlays: editState.overlays || [],
       };
@@ -173,12 +178,16 @@ export default function EditOverlayPage() {
   };
 
   const handlePrintAndFinish = async () => {
+    console.log('🖨️ Print button clicked!');
+
     if (!currentPhoto) {
       console.error('No current photo to print');
       return;
     }
 
     setIsPrinting(true);
+
+    let finalPhotoData: string | undefined;
 
     try {
       console.log('🖨️ Starting print process...');
@@ -188,12 +197,13 @@ export default function EditOverlayPage() {
         photoId: currentPhoto.id,
         frameTemplateId: editState.selectedFrame?.id || undefined,
         frameText: editState.frameText || undefined,
+        text: editState.frameText || '', // Add text field for backend
         textSettings: editState.selectedFrame?.style?.textSettings || undefined,
         overlays: editState.overlays || [],
       };
 
       console.log('🎨 Generating final photo with edits for printing...');
-      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData, editState.selectedFrame, icons);
+      finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData, editState.selectedFrame, icons);
 
       console.log('✅ Final photo generated for printing!');
 
@@ -254,8 +264,12 @@ export default function EditOverlayPage() {
 
       try {
         console.log('📤 Uploading final photo to backend (fallback after print error)...');
-        const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
-        console.log('✅ Final photo uploaded successfully (fallback)!', uploadedPhoto);
+        if (finalPhotoData) {
+          const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
+          console.log('✅ Final photo uploaded successfully (fallback)!', uploadedPhoto);
+        } else {
+          console.warn('⚠️ No final photo data to upload after print error');
+        }
       } catch (error) {
         console.error('❌ Error uploading after print error:', error);
       }
@@ -356,20 +370,21 @@ export default function EditOverlayPage() {
     );
   }
 
-  // Get proper text style using the frame's text settings (UPDATED FOR 2:3 ASPECT RATIO)
+  // Get proper text style for preview (FIXED FOR VISIBILITY)
   const getTextStyle = () => {
     if (!editState.selectedFrame || !editState.frameText || !editState.selectedFrame.style.textSettings.enabled || editState.selectedFrame.id === 'none') return { display: 'none' };
 
-    const textSettings = editState.selectedFrame.style.textSettings;
     return {
       position: 'absolute' as const,
-      left: `${(textSettings.position.x / 1200) * 100}%`, // Scale from 1200px width
-      top: `${(textSettings.position.y / 1800) * 100}%`, // Scale from 1800px height
-      transform: 'translate(0, 0)', // No centering - start from exact position
-      fontSize: `${textSettings.fontSize * 0.333}px`, // Scale down for 400px preview (400/1200 = 0.333)
-      fontFamily: textSettings.fontFamily,
-      color: textSettings.color,
-      zIndex: 10,
+      left: '33px',    // Scaled from x:90 (90/1080 * 400)
+      top: '326px',   // Scaled from y:880 (880/1080 * 400)
+      fontSize: '13px', // Scaled from 36px for 400px preview (400/1080 = 0.370)
+      fontFamily: 'Arial, sans-serif',
+      color: 'white',
+      zIndex: 20,
+      textShadow: '2px 2px 4px rgba(0,0,0,0.8)', // Add shadow for better visibility
+      maxWidth: '333px', // Constrain to preview width
+      wordWrap: 'break-word' as const,
     };
   };
 
@@ -387,16 +402,16 @@ export default function EditOverlayPage() {
         </div>
         <div
           ref={canvasRef}
-          className="h-[600px] w-[400px] overflow-hidden relative shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)] cursor-move"
+          className="h-[400px] w-[400px] overflow-hidden relative shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)] cursor-move"
           onClick={handleCanvasClick}
         >
           {/* Photo background - positioned based on frame selection */}
           {editState.selectedFrame && editState.selectedFrame.id !== 'none' ? (
-            // WITH FRAME: Photo is square and centered in frame area
+            // WITH FRAME: Photo is positioned in frame area
             <img
               src={currentPhoto.file_path}
               alt="Your captured photo"
-              className="absolute left-[33px] top-[33px] w-[333px] h-[333px] object-cover"
+              className="absolute left-[33px] top-[33px] w-[333px] h-[281px] object-cover"
             />
           ) : (
             // NO FRAME: Photo fills entire preview area
@@ -440,8 +455,8 @@ export default function EditOverlayPage() {
                     : 'cursor-grab hover:scale-105'
                 } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : ''}`}
                 style={{
-                  left: `${(overlay.position.x / 1200) * 100}%`, // Scale from 1200px width
-                  top: `${(overlay.position.y / 1800) * 100}%`, // Scale from 1800px height
+                  left: `${(overlay.position.x / 1080) * 100}%`, // Scale from 1080px width
+                  top: `${(overlay.position.y / 1080) * 100}%`, // Scale from 1080px height
                   transform: `translate(-50%, -50%) rotate(${overlay.rotation}deg)`,
                   zIndex: overlay.zIndex + (isBeingDragged ? 1000 : 0), // Bring to front when dragging
                   userSelect: 'none',
@@ -457,8 +472,8 @@ export default function EditOverlayPage() {
                   alt={icon.name}
                   draggable={false}
                   style={{
-                    width: `${(overlay.size * 0.333)}px`, // Scale for 400px preview (400/1200 = 0.333)
-                    height: `${(overlay.size * 0.333)}px`,
+                    width: `${(overlay.size * 0.370)}px`, // Scale for 400px preview (400/1080 = 0.370)
+                    height: `${(overlay.size * 0.370)}px`,
                     pointerEvents: 'none', // Prevent image from interfering with drag
                   }}
                 />

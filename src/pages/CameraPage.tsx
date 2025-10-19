@@ -245,28 +245,30 @@ export default function CameraPage() {
   }
 
   return (
-    <div className="relative h-screen w-full bg-black overflow-hidden">
-      {/* DigiCamControl Live View */}
-      {dccConnected ? (
-        <img
-          src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
-          alt="Live View"
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            // If live view fails, show a placeholder
-            target.style.display = 'none';
-          }}
-        />
-      ) : (
-        <div className="absolute inset-0 w-full h-full bg-gray-900 flex items-center justify-center">
-          <div className="text-center text-white">
-            <Camera size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg">Waiting for DigiCamControl...</p>
-            <p className="text-sm text-gray-400 mt-2">{dccStatus}</p>
+    <div className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
+      {/* DigiCamControl Live View - Square Format */}
+      <div className="relative w-full max-w-[1080px] aspect-square">
+        {dccConnected ? (
+          <img
+            src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
+            alt="Live View"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              // If live view fails, show a placeholder
+              target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-gray-900 flex items-center justify-center">
+            <div className="text-center text-white">
+              <Camera size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="text-lg">Waiting for DigiCamControl...</p>
+              <p className="text-sm text-gray-400 mt-2">{dccStatus}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Status Indicator */}
       <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2">

@@ -59,20 +59,21 @@ export default function EditPhotoPage() {
     }
   };
 
-  // Get proper text style using the frame's text settings (UPDATED FOR 2:3 ASPECT RATIO)
+  // Get proper text style for preview (FIXED FOR VISIBILITY)
   const getTextStyle = () => {
     if (!selectedFrame || !message || !selectedFrame.style.textSettings.enabled || selectedFrame.id === 'none') return { display: 'none' };
 
-    const textSettings = selectedFrame.style.textSettings;
     return {
       position: 'absolute' as const,
-      left: `${(textSettings.position.x / 1200) * 100}%`, // Scale from 1200px width
-      top: `${(textSettings.position.y / 1800) * 100}%`, // Scale from 1800px height
-      transform: 'translate(0, 0)', // No centering - start from exact position
-      fontSize: `${textSettings.fontSize * 0.333}px`, // Scale down for 400px preview (400/1200 = 0.333)
-      fontFamily: textSettings.fontFamily,
-      color: textSettings.color,
-      zIndex: 10,
+      left: '33px',    // Scaled from x:90 (90/1080 * 400)
+      top: '326px',   // Scaled from y:880 (880/1080 * 400)
+      fontSize: '13px', // Scaled from 36px for 400px preview (400/1080 = 0.370)
+      fontFamily: 'Arial, sans-serif',
+      color: 'white',
+      zIndex: 20,
+      textShadow: '2px 2px 4px rgba(0,0,0,0.8)', // Add shadow for better visibility
+      maxWidth: '333px', // Constrain to preview width
+      wordWrap: 'break-word' as const,
     };
   };
 
@@ -105,14 +106,14 @@ export default function EditPhotoPage() {
         <div className="font-['Space_Grotesk'] font-bold leading-[72px] text-[#585d68] text-[64px] text-center tracking-[-1.28px]">
           Your Photo!
         </div>
-        <div className="h-[600px] w-[400px] overflow-hidden relative shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
+        <div className="h-[400px] w-[400px] overflow-hidden relative shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
           {/* Photo background - positioned based on frame selection */}
           {selectedFrame && selectedFrame.id !== 'none' ? (
-            // WITH FRAME: Photo is square and centered in frame area
+            // WITH FRAME: Photo is positioned in frame area
             <img
               src={currentPhoto.file_path}
               alt="Your captured photo"
-              className="absolute left-[33px] top-[33px] w-[333px] h-[333px] object-cover"
+              className="absolute left-[33px] top-[33px] w-[333px] h-[281px] object-cover"
             />
           ) : (
             // NO FRAME: Photo fills entire preview area

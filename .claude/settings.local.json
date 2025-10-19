@@ -10,7 +10,9 @@
       "WebFetch(domain:digicamcontrol.com)",
       "Bash(npm run make:*)",
       "Bash(npm run package:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

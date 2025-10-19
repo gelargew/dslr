@@ -22,6 +22,8 @@ export const usePhoto = () => {
   const isCapturing = useUIStore((state) => state.photos.isCapturing);
   const isSaving = useUIStore((state) => state.photos.isSaving);
   const isLoading = useUIStore((state) => state.photos.isLoading);
+  const countdownDuration = useUIStore((state) => state.photos.countdownDuration);
+  const photoDraftId = useUIStore((state) => state.photos.photoDraftId);
 
   // Get app ID from config store (used as group code)
   const appId = useConfigStore((state) => state.app.id);
@@ -37,6 +39,9 @@ export const usePhoto = () => {
   const removePhoto = useUIStore((state) => state.removePhoto);
   const clearCurrentPhoto = useUIStore((state) => state.clearCurrentPhoto);
   const clearCurrentEdit = useUIStore((state) => state.clearCurrentEdit);
+  const setCountdownDuration = useUIStore((state) => state.setCountdownDuration);
+  const setPhotoDraftId = useUIStore((state) => state.setPhotoDraftId);
+  const clearPhotoDraftId = useUIStore((state) => state.clearPhotoDraftId);
 
   // Convert base64 to File
   const base64ToFile = useCallback((base64: string, filename: string): File => {
@@ -72,9 +77,13 @@ export const usePhoto = () => {
         throw new Error(result.error || 'Failed to upload photo draft');
       }
 
+      // Store the draft ID from the response
+      const draftId = result.data.id.toString();
+      setPhotoDraftId(draftId);
+
       // Create photo record for local state
       const photoRecord: PhotoRecord = {
-        id: result.data.id.toString(),
+        id: draftId,
         filename: `photo-draft-${Date.now()}.jpg`,
         file_path: httpUrl || result.data.url, // Use HTTP URL if provided, otherwise uploaded URL
         original_width: 1920,
@@ -84,6 +93,7 @@ export const usePhoto = () => {
         updated_at: result.data.createdAt,
         is_edited: false,
         is_deleted: false,
+        photoDraftId: draftId, // Store the draft ID in the record
       };
 
       addCapturedPhoto(photoRecord);
@@ -95,7 +105,7 @@ export const usePhoto = () => {
     } finally {
       setPhotoCapturing(false);
     }
-  }, [appId, setPhotoCapturing, addCapturedPhoto, base64ToFile]);
+  }, [appId, setPhotoCapturing, addCapturedPhoto, setPhotoDraftId, base64ToFile]);
 
   // Legacy capturePhoto method for compatibility
   const capturePhoto = useCallback(async (imageData: string, httpUrl?: string): Promise<PhotoRecord> => {
@@ -131,7 +141,8 @@ export const usePhoto = () => {
   // Upload final photo with edits (after editing is complete)
   const uploadFinalPhoto = useCallback(async (
     imageData: string,
-    editData: CreatePhotoEditData
+    editData: CreatePhotoEditData,
+    frameTemplate?: any
   ): Promise<PhotoRecord> => {
     setPhotoSaving(true);
 
@@ -143,8 +154,15 @@ export const usePhoto = () => {
       // Convert base64 to File
       const file = base64ToFile(imageData, `final-photo-${Date.now()}.jpg`);
 
-      // Prepare upload data
-      const frame = editData.frameTemplateId || undefined;
+      // Prepare upload data - send frame URL instead of frame ID
+      let frameUrl: string | undefined;
+      if (frameTemplate && frameTemplate.frameImage && frameTemplate.id !== 'none') {
+        // Use the frameImage URL from the frame template
+        frameUrl = frameTemplate.frameImage;
+        console.log('🖼️ Uploading with frame URL:', frameUrl);
+      } else {
+        console.log('🖼️ No frame selected or frame has no image');
+      }
 
       // Transform overlay data to match API format: [{x: number, y: number, iconId: number}]
       let iconData: string | undefined;
@@ -157,8 +175,8 @@ export const usePhoto = () => {
         iconData = JSON.stringify(formattedIcons);
       }
 
-      // Upload via HTTP API
-      const result = await window.httpAPI.uploadPhoto(file, appId, frame, iconData);
+      // Upload via HTTP API with photoDraftId and frame URL
+      const result = await window.httpAPI.uploadPhoto(file, appId, frameUrl, iconData, photoDraftId);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to upload final photo');
@@ -176,6 +194,7 @@ export const usePhoto = () => {
         updated_at: result.data.createdAt,
         is_edited: true,
         is_deleted: false,
+        photoDraftId: photoDraftId || undefined, // Include draft ID if available
       };
 
       return photoRecord;
@@ -185,7 +204,7 @@ export const usePhoto = () => {
     } finally {
       setPhotoSaving(false);
     }
-  }, [appId, setPhotoSaving, base64ToFile]);
+  }, [appId, setPhotoSaving, base64ToFile, photoDraftId]);
 
   const generateFinalPhoto = useCallback(async (
     photoId: string,
@@ -289,6 +308,8 @@ export const usePhoto = () => {
     isCapturing,
     isSaving,
     isLoading,
+    countdownDuration,
+    photoDraftId,
 
     // Actions
     capturePhoto,
@@ -300,6 +321,9 @@ export const usePhoto = () => {
     deletePhoto,
     setCurrentPhoto,
     clearCurrentPhoto,
-    clearCurrentEdit
+    clearCurrentEdit,
+    setCountdownDuration,
+    setPhotoDraftId,
+    clearPhotoDraftId
   };
 };

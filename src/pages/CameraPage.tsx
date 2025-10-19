@@ -35,7 +35,7 @@ declare global {
 
 export default function CameraPage() {
   const navigate = useNavigate();
-  const { capturePhoto, isCapturing } = usePhoto();
+  const { capturePhoto, isCapturing, countdownDuration, setCountdownDuration, clearPhotoDraftId } = usePhoto();
   const [dccConnected, setDccConnected] = useState(false);
   const [dccStatus, setDccStatus] = useState<string>('Checking DigiCamControl...');
   const [lastImage, setLastImage] = useState<string | null>(null);
@@ -85,6 +85,12 @@ export default function CameraPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Clear photo draft ID when entering camera page to ensure fresh session
+  useEffect(() => {
+    console.log('📷 CameraPage: Clearing photo draft ID for fresh session...');
+    clearPhotoDraftId();
+  }, [clearPhotoDraftId]);
 
   // Listen for new images from DigiCamControl
   useEffect(() => {
@@ -230,6 +236,13 @@ export default function CameraPage() {
     navigate({ to: "/" });
   };
 
+  const handleTimerDurationToggle = () => {
+    const durations = [3, 5, 10];
+    const currentIndex = durations.indexOf(countdownDuration);
+    const nextIndex = (currentIndex + 1) % durations.length;
+    setCountdownDuration(durations[nextIndex]);
+  };
+
   if (error) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
@@ -245,39 +258,51 @@ export default function CameraPage() {
   }
 
   return (
-    <div className="relative h-screen w-full bg-black overflow-hidden flex items-center justify-center">
-      {/* DigiCamControl Live View - Square Format */}
-      <div className="relative w-full max-w-[1080px] aspect-square">
-        {dccConnected ? (
-          <img
-            src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
-            alt="Live View"
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              // If live view fails, show a placeholder
-              target.style.display = 'none';
-            }}
-          />
-        ) : (
-          <div className="absolute inset-0 w-full h-full bg-gray-900 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Camera size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Waiting for DigiCamControl...</p>
-              <p className="text-sm text-gray-400 mt-2">{dccStatus}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
+    <div className="relative h-screen w-full bg-black overflow-hidden flex flex-col items-center justify-between p-8 pt-2">
       {/* Status Indicator */}
-      <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2">
+      {/* <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2 z-10">
         <div className={`w-3 h-3 rounded-full ${dccConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
         <span className="text-white text-sm">{dccStatus}</span>
+      </div> */}
+
+      {/* DigiCamControl Live View - Square Container */}
+      <div className="flex-1 flex items-center justify-center max-w-4xl w-full">
+        <div className="relative w-full aspect-square max-w-2xl">
+          {dccConnected ? (
+            <img
+              src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
+              alt="Live View"
+              className="absolute inset-0 w-full h-full object-cover rounded-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                // If live view fails, show a placeholder
+                target.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="absolute inset-0 w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
+              <div className="text-center text-white">
+                <Camera size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Waiting for DigiCamControl...</p>
+                <p className="text-sm text-gray-400 mt-2">{dccStatus}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Camera Button */}
-      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2">
+      {/* Control Buttons */}
+      <div className="flex items-center gap-8 mt-2">
+        {/* Timer Duration Button */}
+        <button
+          onClick={handleTimerDurationToggle}
+          disabled={!dccConnected || isCapturing}
+          className="bg-[#585d68] opacity-80 hover:opacity-70 disabled:opacity-50 w-16 h-16 rounded-full flex flex-col gap-1 items-center justify-center transition-opacity duration-200 shadow-2xl"
+        >
+          <span className="text-white font-semibold">{countdownDuration}s</span>
+        </button>
+
+        {/* Camera Button */}
         <button
           onClick={handleCapture}
           disabled={!dccConnected || isCapturing}
@@ -286,7 +311,7 @@ export default function CameraPage() {
           {isCapturing ? (
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600" />
           ) : (
-            <Camera size={36} className="text-gray-700" />
+            <Camera size={36} className="text-white" />
           )}
         </button>
       </div>

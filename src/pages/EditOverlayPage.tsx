@@ -94,7 +94,7 @@ export default function EditOverlayPage() {
 
       // Upload the final photo via HTTP API
       console.log('📤 Uploading final photo to backend...');
-      const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
+      const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData, editState.selectedFrame);
 
       console.log('✅ Final photo uploaded successfully!', uploadedPhoto);
 
@@ -137,7 +137,7 @@ export default function EditOverlayPage() {
 
       // Upload the final photo to backend before printing
       console.log('📤 Uploading final photo to backend...');
-      await uploadFinalPhoto(finalPhotoData, editData);
+      await uploadFinalPhoto(finalPhotoData, editData, editState.selectedFrame);
       console.log('✅ Final photo uploaded successfully!');
 
       // Create a temporary image element for printing
@@ -246,7 +246,7 @@ export default function EditOverlayPage() {
 
         try {
           console.log('📤 Uploading final photo to backend...');
-          const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
+          const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData, editState.selectedFrame);
           console.log('✅ Final photo uploaded successfully!', uploadedPhoto);
         } catch (error) {
           console.error('❌ Error uploading after print:', error);
@@ -265,7 +265,7 @@ export default function EditOverlayPage() {
       try {
         console.log('📤 Uploading final photo to backend (fallback after print error)...');
         if (finalPhotoData) {
-          const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData);
+          const uploadedPhoto = await uploadFinalPhoto(finalPhotoData, editData, editState.selectedFrame);
           console.log('✅ Final photo uploaded successfully (fallback)!', uploadedPhoto);
         } else {
           console.warn('⚠️ No final photo data to upload after print error');

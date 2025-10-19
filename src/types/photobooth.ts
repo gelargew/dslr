@@ -13,6 +13,7 @@ export interface PhotoRecord {
   updated_at: string;
   is_edited: boolean;
   is_deleted: boolean;
+  photoDraftId?: string; // Optional draft ID from initial upload
 }
 
 export interface CreatePhotoData {

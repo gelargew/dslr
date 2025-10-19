@@ -17,6 +17,9 @@ interface PhotoContextType extends PhotoContextState {
   deletePhoto: (photoId: string) => Promise<void>;
   clearCurrentPhoto: () => void;
   clearCurrentEdit: () => void;
+  // Timer controls
+  countdownDuration: number;
+  setCountdownDuration: (duration: number) => void;
 }
 
 const PhotoContext = createContext<PhotoContextType | undefined>(undefined);
@@ -30,6 +33,8 @@ export const PhotoContextProvider: React.FC<{ children: ReactNode }> = ({ childr
     isSaving: false,
     isLoading: false,
   });
+
+  const [countdownDuration, setCountdownDuration] = useState<number>(3);
 
   const capturePhoto = useCallback(async (imageData: string): Promise<PhotoRecord> => {
     setState(prev => ({ ...prev, isCapturing: true }));
@@ -181,6 +186,8 @@ export const PhotoContextProvider: React.FC<{ children: ReactNode }> = ({ childr
         deletePhoto,
         clearCurrentPhoto,
         clearCurrentEdit,
+        countdownDuration,
+        setCountdownDuration,
       }}
     >
       {children}

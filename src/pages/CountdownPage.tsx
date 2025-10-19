@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhoto } from "@/hooks/usePhoto";
-import { getCountdownDuration } from "@/config/photobooth-config";
 import { Camera } from "lucide-react";
 
 // TypeScript declarations for the DigiCamControl API
@@ -32,8 +31,8 @@ declare global {
 
 export default function CountdownPage() {
   const navigate = useNavigate();
-  const { setCurrentPhoto } = usePhoto();
-  const [countdown, setCountdown] = useState(getCountdownDuration());
+  const { setCurrentPhoto, countdownDuration } = usePhoto();
+  const [countdown, setCountdown] = useState(countdownDuration);
   const [isCapturing, setIsCapturing] = useState(false);
   const [dccConnected, setDccConnected] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<string>('');

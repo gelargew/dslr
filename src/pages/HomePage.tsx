@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import startImage from '/start.png';
 import { configManager } from '@/services/config-manager';
 import { useEdit } from "@/hooks/useEdit";
+import { usePhoto } from "@/hooks/usePhoto";
 
 // TypeScript declarations for the DigiCamControl API
 declare global {
@@ -18,12 +19,17 @@ declare global {
 export default function HomePage() {
   const navigate = useNavigate();
   const { clearEdit } = useEdit();
+  const { clearPhotoDraftId } = usePhoto();
 
   const handleStart = async () => {
     try {
       // Clear edit state before starting new session
       console.log('🧹 Clearing edit state for new session...');
       clearEdit();
+
+      // Clear photo draft ID before starting new session
+      console.log('🧹 Clearing photo draft ID for new session...');
+      clearPhotoDraftId();
 
       // Start live view before navigating to camera
       console.log('🎬 Starting live view from homepage...');

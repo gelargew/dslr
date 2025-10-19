@@ -14,6 +14,7 @@ const config: ForgeConfig = {
     appBundleId: "com.textimoni.photobooth",
     name: "Textimoni Photobooth",
     appCategoryType: "public.app-category.photography",
+    icon: './src/assets/icon.ico', // Windows app icon
     extraResources: [
       {
         from: 'src/assets',
@@ -59,7 +60,7 @@ const config: ForgeConfig = {
       noMsi: true,
       // Additional options to ensure proper behavior
       title: "Textimoni Photobooth",
-      // Note: setupIcon requires .ico format - will add later when available
+      setupIcon: './src/assets/icon.ico', // Installer icon
       // loadingGif: "public/start.png", // Remove for now as it may also cause issues
     }),
     new MakerZIP({}, ["darwin"]),

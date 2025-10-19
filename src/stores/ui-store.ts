@@ -29,6 +29,8 @@ export interface UIState {
     isCapturing: boolean;
     isSaving: boolean;
     isLoading: boolean;
+    countdownDuration: number; // Timer duration in seconds (3, 5, or 10)
+    photoDraftId: string | null; // Draft ID from initial photo upload
   };
 
   // Edit State
@@ -61,7 +63,9 @@ const defaultUIState: UIState = {
     capturedPhotos: [],
     isCapturing: false,
     isSaving: false,
-    isLoading: false
+    isLoading: false,
+    countdownDuration: 3, // Default to 3 seconds
+    photoDraftId: null // Default to no draft ID
   },
   edit: {
     selectedFrame: undefined,
@@ -249,6 +253,36 @@ export const useUIStore = create<UIState>()((set, get) => ({
       photos: {
         ...state.photos,
         currentEdit: null
+      }
+    }));
+  },
+
+  setCountdownDuration: (duration: number) => {
+    set((state) => ({
+      ...state,
+      photos: {
+        ...state.photos,
+        countdownDuration: duration
+      }
+    }));
+  },
+
+  setPhotoDraftId: (draftId: string | null) => {
+    set((state) => ({
+      ...state,
+      photos: {
+        ...state.photos,
+        photoDraftId: draftId
+      }
+    }));
+  },
+
+  clearPhotoDraftId: () => {
+    set((state) => ({
+      ...state,
+      photos: {
+        ...state.photos,
+        photoDraftId: null
       }
     }));
   },

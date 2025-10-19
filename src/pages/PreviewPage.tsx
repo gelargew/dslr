@@ -66,16 +66,20 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="relative h-screen w-full">
-      {/* Fullscreen Photo Background */}
-      <img
-        src={currentPhoto.file_path}
-        alt="Captured photo"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+    <div className="relative h-screen w-full bg-black overflow-hidden flex flex-col items-center justify-between p-8 pt-2">
+      {/* Captured Photo - Square Container */}
+      <div className="flex-1 flex items-center justify-center max-w-4xl w-full">
+        <div className="relative w-full aspect-square max-w-2xl">
+          <img
+            src={currentPhoto.file_path}
+            alt="Captured photo"
+            className="absolute inset-0 w-full h-full object-cover rounded-lg"
+          />
+        </div>
+      </div>
 
-      {/* Two Buttons at Bottom */}
-      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex gap-[42px] items-center">
+      {/* Control Buttons */}
+      <div className="flex items-center gap-8 mt-2">
         {/* Finish Button (Blue) */}
         <button
           onClick={handleFinish}

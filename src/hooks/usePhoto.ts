@@ -189,7 +189,9 @@ export const usePhoto = () => {
 
   const generateFinalPhoto = useCallback(async (
     photoId: string,
-    editData: CreatePhotoEditData
+    editData: CreatePhotoEditData,
+    frameTemplate?: any,
+    availableIcons: any[] = []
   ): Promise<string> => {
     setPhotoSaving(true);
 
@@ -202,16 +204,23 @@ export const usePhoto = () => {
 
       if (!currentPhoto) throw new Error('No current photo to generate from');
 
-      const frameTemplate = editData.frameTemplateId
-        ? (await import('@/assets/frames/frame-templates')).getFrameById(editData.frameTemplateId)
-        : undefined;
+      console.log('🔍 Using frame template:', {
+        frameTemplateId: editData.frameTemplateId,
+        frameTemplate: frameTemplate ? {
+          id: frameTemplate.id,
+          name: frameTemplate.name,
+          frameImage: frameTemplate.frameImage,
+          textSettings: frameTemplate.style.textSettings
+        } : 'No frame selected'
+      });
 
       const finalPhotoData = await generatePhoto(
         currentPhoto.file_path,
         frameTemplate,
         editData.frameText,
         editData.overlays,
-        editData.textSettings
+        editData.textSettings,
+        availableIcons
       );
 
       return finalPhotoData;

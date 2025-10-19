@@ -26,14 +26,12 @@ export default function CompletePage() {
   const [countdown, setCountdown] = useState(getThankYouDuration());
 
   useEffect(() => {
-    // Auto-navigate after 10 seconds
+    // Auto-navigate after countdown
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          // Clear current photo/edit state and return to welcome
-          clearCurrentPhoto();
-          clearCurrentEdit();
-          navigate({ to: "/" });
+          // Don't call state updates here, just return 0
+          // The actual navigation will happen in the separate useEffect below
           return 0;
         }
         return prev - 1;
@@ -41,7 +39,22 @@ export default function CompletePage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [navigate, clearCurrentPhoto, clearCurrentEdit]);
+  }, []);
+
+  // Separate effect to handle navigation when countdown reaches 0
+  useEffect(() => {
+    if (countdown === 0) {
+      // Clear current photo/edit state and return to welcome
+      // Use setTimeout to ensure this doesn't happen during render
+      const timeoutId = setTimeout(() => {
+        clearCurrentPhoto();
+        clearCurrentEdit();
+        navigate({ to: "/" });
+      }, 0);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [countdown, navigate, clearCurrentPhoto, clearCurrentEdit]);
 
   const handleReturnNow = () => {
     clearCurrentPhoto();

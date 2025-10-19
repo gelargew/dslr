@@ -1,5 +1,5 @@
 import { FrameTemplate } from '@/assets/frames/frame-templates';
-import { IconOverlay, overlayIcons } from '@/assets/icons/overlay-icons';
+import { IconOverlay, OverlayIcon } from '@/assets/icons/overlay-icons';
 
 interface TextSettings {
   position: { x: number; y: number };
@@ -13,7 +13,8 @@ export async function generateFinalPhoto(
   frameTemplate?: FrameTemplate,
   frameText?: string,
   overlays: IconOverlay[] = [],
-  textSettings?: TextSettings
+  textSettings?: TextSettings,
+  availableIcons: OverlayIcon[] = []
 ): Promise<string> {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -32,7 +33,9 @@ export async function generateFinalPhoto(
     frameText,
     textSettings,
     overlaysCount: overlays.length,
-    canvasSize: `${canvas.width}x${canvas.height}`
+    availableIconsCount: availableIcons.length,
+    canvasSize: `${canvas.width}x${canvas.height}`,
+    overlays: overlays.map(o => ({ id: o.id, iconId: o.iconId, position: o.position }))
   });
 
   try {
@@ -55,14 +58,16 @@ export async function generateFinalPhoto(
 
     // 2. Apply frame if selected (not for "none" frame)
     if (frameTemplate && frameTemplate.id !== 'none') {
-      console.log('🖼️ Applying frame:', frameTemplate.name);
+      console.log('🖼️ Applying frame:', frameTemplate.name, 'frameImage:', frameTemplate.frameImage);
       await applyFrame(ctx, frameTemplate, frameText, textSettings, canvas.width, canvas.height);
       console.log('✅ Frame applied');
+    } else {
+      console.log('⏭️ No frame selected, skipping frame application');
     }
 
     // 3. Add overlay icons
     for (const overlay of overlays) {
-      await drawOverlay(ctx, overlay);
+      await drawOverlay(ctx, overlay, availableIcons);
     }
 
     console.log('✅ Final photo generated successfully');
@@ -87,7 +92,12 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
       console.error('❌ Failed to load image:', src, error);
       reject(new Error(`Failed to load image: ${src}`));
     };
-    img.crossOrigin = 'anonymous'; // Handle CORS if needed
+
+    // Handle CORS for external URLs
+    if (src.startsWith('http')) {
+      img.crossOrigin = 'Anonymous';
+    }
+
     img.src = src;
   });
 }
@@ -98,97 +108,54 @@ async function applyFrame(
   frame: FrameTemplate,
   text?: string,
   textSettings?: TextSettings,
-  width: number = 1080,
-  height: number = 1080
+  width: number,
+  height: number
 ) {
   const { style } = frame;
 
   console.log('🎨 Applying frame:', {
     name: frame.name,
-    useFrameImage: style.useFrameImage,
     frameImage: frame.frameImage,
     hasText: !!text
   });
 
-  if (style.useFrameImage && frame.frameImage) {
-    // Use frame image overlay
+  if (frame.frameImage) {
+    // Use the actual frame image from the selected frame
     try {
       console.log('🖼️ Loading frame image:', frame.frameImage);
       const frameImg = await loadImage(frame.frameImage);
 
-      // Apply the frame image as an overlay
+      // Apply the frame image exactly as provided (full canvas overlay)
       console.log('🎨 Applying frame image overlay...');
-      ctx.globalCompositeOperation = 'source-over'; // Changed from 'multiply' for better visibility
+      ctx.globalCompositeOperation = 'source-over';
       ctx.drawImage(frameImg, 0, 0, width, height);
       console.log('✅ Frame image applied successfully');
 
     } catch (error) {
-      console.warn(`⚠️ Failed to load frame image: ${frame.frameImage}`, error);
-      // Fall back to CSS-style frame
-      console.log('🔄 Falling back to CSS frame...');
-      drawCSSFrame(ctx, style, width, height);
+      console.error(`❌ Failed to load frame image: ${frame.frameImage}`, error);
+      throw new Error(`Failed to load frame image: ${frame.frameImage}`);
     }
   } else {
-    // Use CSS-style frame (border + background)
-    console.log('🎨 Using CSS-style frame...');
-    drawCSSFrame(ctx, style, width, height);
+    console.log('⏭️ No frame image available, skipping frame overlay');
   }
 
   // Draw frame text if provided
-  if (text && style.textSettings.enabled) {
-    console.log('📝 Drawing frame text:', text);
-          drawFrameText(ctx, text, frame, textSettings);
-    console.log('✅ Frame text drawn');
-  }
-}
-
-// Draw CSS-style frame (border and background) - Only for framed templates
-function drawCSSFrame(ctx: CanvasRenderingContext2D, style: FrameTemplate['style'], width: number, height: number) {
-  console.log('🎨 Drawing standardized CSS frame:', {
-    canvasSize: `${width}x${height}`,
-    borderWidth: style.borderWidth,
-    borderColor: style.borderColor,
-    backgroundColor: style.backgroundColor
+  console.log('📝 Text rendering check:', {
+    hasText: !!text,
+    textLength: text?.length,
+    textEnabled: style.textSettings.enabled,
+    textSettings
   });
 
-  // Draw frame background (the frame itself, not the photo area)
-  if (style.backgroundColor && style.backgroundColor !== 'transparent') {
-    ctx.fillStyle = style.backgroundColor;
-
-    // Draw top frame (0,0) to (1200,100)
-    ctx.fillRect(0, 0, width, 100);
-
-    // Draw left frame (0,0) to (100,1800)
-    ctx.fillRect(0, 0, 100, height);
-
-    // Draw right frame (1100,0) to (1200,1800)
-    ctx.fillRect(width - 100, 0, 100, height);
-
-    // Draw bottom frame (0,1100) to (1200,1800)
-    ctx.fillRect(0, 1100, width, 700);
-
-    console.log('✅ Standardized frame background drawn');
-  }
-
-  // Draw frame border if specified
-  if (style.borderWidth > 0) {
-    ctx.strokeStyle = style.borderColor;
-    ctx.lineWidth = style.borderWidth;
-
-    // Draw outer border around entire canvas
-    ctx.strokeRect(
-      style.borderWidth / 2,
-      style.borderWidth / 2,
-      width - style.borderWidth,
-      height - style.borderWidth
-    );
-
-    // Draw inner border around photo area
-    ctx.strokeRect(100, 100, 1000, 1000);
-
-    console.log('✅ Frame borders drawn');
+  if (text && style.textSettings.enabled) {
+    console.log('📝 Drawing frame text:', text, 'at position:', textSettings?.position);
+          drawFrameText(ctx, text, frame, textSettings);
+    console.log('✅ Frame text drawn');
+  } else {
+    console.log('⏭️ No text to draw or text settings disabled');
   }
 }
+
 
 // Draw frame text with custom positioning
 function drawFrameText(
@@ -224,7 +191,7 @@ function drawFrameText(
   const textX = position.x;
   const textY = position.y;
 
-    // Always use 1000px width for text wrapping (standardized for all frames)
+  // Always use 1000px width for text wrapping (standardized for all frames)
   const fixedWidth = 1000;
   drawWrappedText(ctx, text, textX, textY, fixedWidth, fontSize);
 
@@ -273,17 +240,25 @@ function drawWrappedText(
 }
 
 // Draw overlay icon on the canvas
-async function drawOverlay(ctx: CanvasRenderingContext2D, overlay: IconOverlay) {
-  const icon = overlayIcons.find(i => i.id === overlay.iconId);
+async function drawOverlay(ctx: CanvasRenderingContext2D, overlay: IconOverlay, availableIcons: OverlayIcon[] = []) {
+  console.log('🎯 Looking for icon:', overlay.iconId, 'in available icons:', availableIcons.map(i => i.id));
+  const icon = availableIcons.find(i => i.id === overlay.iconId);
   if (!icon) {
-    console.warn(`⚠️ Icon not found: ${overlay.iconId}`);
+    console.warn(`⚠️ Icon not found: ${overlay.iconId}. Available icons:`, availableIcons.map(i => i.id));
     return;
   }
 
   try {
-    console.log('🎯 Drawing overlay:', icon.name, 'at', overlay.position);
-    // For SVG icons, we need to convert them to images
-    const img = await loadSVGAsImage(icon.iconPath);
+    console.log('🎯 Drawing overlay:', icon.name, 'at', overlay.position, 'type:', icon.iconType);
+
+    // Load image based on type
+    let img: HTMLImageElement;
+    if (icon.iconType === 'svg') {
+      img = await loadSVGAsImage(icon.iconPath);
+    } else {
+      // For PNG/JPEG images, load directly
+      img = await loadImage(icon.iconPath);
+    }
 
     // Constrain position within canvas bounds (1200×1800)
     const halfSize = overlay.size / 2;

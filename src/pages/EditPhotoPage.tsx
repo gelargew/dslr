@@ -72,12 +72,6 @@ export default function EditPhotoPage() {
       fontSize: `${textSettings.fontSize * 0.333}px`, // Scale down for 400px preview (400/1200 = 0.333)
       fontFamily: textSettings.fontFamily,
       color: textSettings.color,
-      backgroundColor: textSettings.background || 'transparent',
-      padding: `${(textSettings.padding || 0) * 0.333}px`,
-      textAlign: textSettings.align as 'left' | 'center' | 'right',
-      maxWidth: `${(textSettings.maxWidth || 1000) * 0.333}px`, // Scale max width from 1000px
-      wordWrap: 'break-word' as const,
-      whiteSpace: 'pre-wrap' as const,
       zIndex: 10,
     };
   };
@@ -111,7 +105,7 @@ export default function EditPhotoPage() {
         <div className="font-['Space_Grotesk'] font-bold leading-[72px] text-[#585d68] text-[64px] text-center tracking-[-1.28px]">
           Your Photo!
         </div>
-        <div className="h-[600px] w-[400px] overflow-hidden relative rounded-3xl shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
+        <div className="h-[600px] w-[400px] overflow-hidden relative shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)]">
           {/* Photo background - positioned based on frame selection */}
           {selectedFrame && selectedFrame.id !== 'none' ? (
             // WITH FRAME: Photo is square and centered in frame area
@@ -149,7 +143,9 @@ export default function EditPhotoPage() {
       </div>
 
       {/* Right Panel - Controls */}
-      <div className="flex flex-col gap-6 items-center justify-start overflow-hidden px-8 py-8 relative rounded-bl-[32px] rounded-tl-[32px]">
+      <div className="flex flex-col gap-6 items-center justify-start overflow-hidden px-8 py-8 relative rounded-bl-[32px] rounded-tl-[32px] h-full">
+        {/* Scrollable content container */}
+        <div className="flex-1 w-full overflow-y-auto flex flex-col gap-6 pb-8">
                   {/* Message Input Section */}
         <div className="flex flex-col gap-4 items-center w-full">
           <div className="font-['Space_Grotesk'] font-bold leading-[32px] text-[#585d68] text-[28px] text-center tracking-[-0.56px]">
@@ -157,13 +153,13 @@ export default function EditPhotoPage() {
           </div>
           <div className="flex flex-col gap-2 items-end w-full">
             <div className="font-['Public_Sans'] font-medium leading-[20px] text-[14px] text-[#70747d] w-full text-right">
-              <span className="text-red-500">*</span>max 80 chars
+              max 80 chars (optional)
             </div>
             <div className="flex h-[70px] items-start p-[12px] w-full border border-[#585d68] rounded-xl">
               <textarea
                 value={message}
                 onChange={handleMessageChange}
-                placeholder="Add your message here..."
+                placeholder="Add your message here (optional)..."
                 className="w-full h-full font-['Plus_Jakarta_Sans'] font-medium leading-[24px] text-[18px] text-[#70747d] bg-transparent border-none outline-none resize-none"
                 maxLength={80}
               />
@@ -177,38 +173,38 @@ export default function EditPhotoPage() {
 
 
         {/* Template Selection */}
-        <div className="flex flex-col gap-4 items-center w-full flex-1">
-          <div className="font-['Space_Grotesk'] font-bold leading-[32px] text-[#585d68] text-[28px] text-center tracking-[-0.56px]">
-            Choose Your Template
-          </div>
-          <div className="flex-1 w-full">
-            {/* Template Grid */}
-            <div className="grid grid-cols-2 gap-4 w-full h-full">
-              {frames.slice(0, 4).map((template) => (
-                <div
-                  key={template.id}
-                  onClick={() => handleFrameSelect(template)}
-                  className={`aspect-[2/3] bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
-                    selectedFrame?.id === template.id
-                      ? 'ring-4 ring-blue-500 scale-105'
-                      : 'hover:scale-102'
-                  }`}
-                  style={{ backgroundImage: `url('${template.frameImage || template.previewImage}')` }}
-                  title={template.name}
-                >
-                  {/* Template preview content can go here */}
-                </div>
-              ))}
+          <div className="flex flex-col gap-4 items-center w-full">
+            <div className="font-['Space_Grotesk'] font-bold leading-[32px] text-[#585d68] text-[28px] text-center tracking-[-0.56px]">
+              Choose Your Template
+            </div>
+            <div className="w-full">
+              {/* Template Grid */}
+              <div className="grid grid-cols-2 gap-4 w-full">
+                {frames.slice(0, 4).map((template) => (
+                  <div
+                    key={template.id}
+                    onClick={() => handleFrameSelect(template)}
+                    className={`aspect-[2/3] bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
+                      selectedFrame?.id === template.id
+                        ? 'ring-4 ring-blue-500 scale-105'
+                        : 'hover:scale-102'
+                    }`}
+                    style={{ backgroundImage: `url('${template.frameImage || template.previewImage}')` }}
+                    title={template.name}
+                  >
+                    {/* Template preview content can go here */}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Next Button */}
-        <div className="w-full">
+        {/* Fixed Bottom Buttons */}
+        <div className="w-full border-t border-gray-200 pt-6">
           <button
             onClick={handleNext}
-            disabled={!message.trim()}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center px-6 py-4 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+            className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center px-6 py-4 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
             <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[24px] text-center">
               Next

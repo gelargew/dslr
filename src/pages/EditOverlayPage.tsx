@@ -84,7 +84,7 @@ export default function EditOverlayPage() {
       console.log('💾 Preparing edit data:', editData);
 
       // Generate the final photo with frame and overlays
-      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
+      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData, editState.selectedFrame, icons);
 
       console.log('✅ Final photo generated!');
 
@@ -126,9 +126,14 @@ export default function EditOverlayPage() {
       };
 
       console.log('🎨 Generating final photo with edits for printing...');
-      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
+      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData, editState.selectedFrame, icons);
 
       console.log('✅ Final photo generated for printing!');
+
+      // Upload the final photo to backend before printing
+      console.log('📤 Uploading final photo to backend...');
+      await uploadFinalPhoto(finalPhotoData, editData);
+      console.log('✅ Final photo uploaded successfully!');
 
       // Create a temporary image element for printing
       const img = new Image();
@@ -188,7 +193,7 @@ export default function EditOverlayPage() {
       };
 
       console.log('🎨 Generating final photo with edits for printing...');
-      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData);
+      const finalPhotoData = await generateFinalPhoto(currentPhoto.id, editData, editState.selectedFrame, icons);
 
       console.log('✅ Final photo generated for printing!');
 
@@ -364,12 +369,6 @@ export default function EditOverlayPage() {
       fontSize: `${textSettings.fontSize * 0.333}px`, // Scale down for 400px preview (400/1200 = 0.333)
       fontFamily: textSettings.fontFamily,
       color: textSettings.color,
-      backgroundColor: textSettings.background || 'transparent',
-      padding: `${(textSettings.padding || 0) * 0.333}px`,
-      textAlign: textSettings.align as 'left' | 'center' | 'right',
-      maxWidth: `${(textSettings.maxWidth || 1000) * 0.333}px`, // Scale max width from 1000px
-      wordWrap: 'break-word' as const,
-      whiteSpace: 'pre-wrap' as const,
       zIndex: 10,
     };
   };
@@ -388,7 +387,7 @@ export default function EditOverlayPage() {
         </div>
         <div
           ref={canvasRef}
-          className="h-[600px] w-[400px] overflow-hidden relative rounded-3xl shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)] cursor-move"
+          className="h-[600px] w-[400px] overflow-hidden relative shadow-[0px_0px_32px_0px_rgba(0,0,0,0.08)] cursor-move"
           onClick={handleCanvasClick}
         >
           {/* Photo background - positioned based on frame selection */}

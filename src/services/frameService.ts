@@ -79,23 +79,12 @@ export class FrameService extends BaseService {
       frameImage: backendFrame.url,
       cssClass: `frame-backend-${backendFrame.id}`,
       style: {
-        borderWidth: 0,
-        borderColor: 'transparent',
-        useFrameImage: true,
         textSettings: {
           enabled: true,
           position: { x: 100, y: 1350 }, // Standardized position from FRAME_STANDARDIZATION.md
-          maxWidth: 1000, // Full inner photo width
           fontSize: 48, // Standard font size
           fontFamily: 'Geist',
           color: '#ffffff', // Default white color
-          padding: 20,
-          align: 'center',
-          editable: {
-            position: true,
-            color: true,
-            size: true,
-          },
         },
       },
     };
@@ -113,23 +102,12 @@ export class FrameService extends BaseService {
       frameImage: null,
       cssClass: 'frame-none',
       style: {
-        borderWidth: 0,
-        borderColor: 'transparent',
-        useFrameImage: false,
         textSettings: {
           enabled: false,
           position: { x: 600, y: 1600 }, // Centered position (won't be used)
-          maxWidth: 1000,
           fontSize: 0,
           fontFamily: 'Geist',
           color: 'transparent',
-          padding: 0,
-          align: 'center',
-          editable: {
-            position: false,
-            color: false,
-            size: false,
-          },
         },
       },
     };
@@ -152,23 +130,12 @@ export class FrameService extends BaseService {
         frameImage: '/assets/frames/frame-spotify.png',
         cssClass: 'frame-fallback',
         style: {
-          borderWidth: 0,
-          borderColor: 'transparent',
-          useFrameImage: true,
           textSettings: {
             enabled: true,
             position: { x: 100, y: 1350 },
-            maxWidth: 1000,
             fontSize: 48,
             fontFamily: 'Geist',
             color: '#ffffff',
-            padding: 20,
-            align: 'center',
-            editable: {
-              position: true,
-              color: true,
-              size: true,
-            },
           },
         },
       },

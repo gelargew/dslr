@@ -9,25 +9,12 @@ export interface FrameTemplate {
 }
 
 export interface FrameStyleConfig {
-  borderWidth: number;
-  borderColor: string;
-  backgroundColor?: string;
-  useFrameImage: boolean; // Whether to use overlay image instead of CSS border
   textSettings: {
     enabled: boolean;
     position: { x: number; y: number }; // Text position in pixels
-    maxWidth?: number; // Max width for text wrapping
     fontSize: number;
     fontFamily: string;
     color: string;
-    background?: string;
-    padding?: number;
-    align: 'left' | 'center' | 'right';
-    editable: {
-      position: boolean; // Can user move text position?
-      color: boolean; // Can user change text color?
-      size: boolean; // Can user change font size?
-    };
   };
 }
 

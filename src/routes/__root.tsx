@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { useDebugger } from "@/hooks/useDebugger";
 import { useSettings } from "@/hooks/useSettings";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Debugger } from "@/components/Debugger";
 import { DebuggerIcon } from "@/components/DebuggerIcon";
 import SettingsDialog from "@/components/SettingsDialog";
@@ -13,6 +14,9 @@ export const RootRoute = createRootRoute({
 function RootContent() {
   const { isDebuggerEnabled, isDebuggerVisible, toggleDebugger } = useDebugger();
   const { isSettingsOpen, openSettings, closeSettings, canAccessSettings } = useSettings();
+
+  // Initialize global keyboard shortcuts
+  useKeyboardShortcuts();
 
   // Log debugger state changes for debugging
   React.useEffect(() => {

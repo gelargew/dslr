@@ -77,6 +77,7 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200, // Make wider for debug
     height: 800,
+    fullscreen: true, // Start in fullscreen mode
     webPreferences: {
       devTools: true,
       contextIsolation: true, // Keep context isolation for security
@@ -90,7 +91,6 @@ function createWindow() {
       allowRunningInsecureContent: true,
       nodeIntegrationInWorker: true,
     },
-    titleBarStyle: "hidden",
     // For production, start with a reasonable size
     show: false, // Don't show until ready
   });

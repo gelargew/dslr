@@ -81,7 +81,7 @@ contextBridge.exposeInMainWorld('httpAPI', {
   },
 
   // Final photo upload (after editing)
-  uploadPhoto: (file: File, groupCode: string, frame?: string, iconData?: string, photoDraftId?: string) => {
+  uploadPhoto: (file: File, groupCode: string, frame?: string, iconData?: string, photoDraftId?: string, text?: string) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -89,6 +89,7 @@ contextBridge.exposeInMainWorld('httpAPI', {
       if (frame) formData.append('frame', frame);
       if (iconData) formData.append('iconData', iconData);
       if (photoDraftId) formData.append('photoDraftId', photoDraftId);
+      if (text) formData.append('text', text);
 
       const headers = {
         'x-api-key': API_KEY,

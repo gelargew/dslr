@@ -185,7 +185,7 @@ export default function EditPhotoPage() {
                   <div
                     key={template.id}
                     onClick={() => handleFrameSelect(template)}
-                    className={`aspect-[2/3] bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
+                    className={`aspect-[1/1] bg-center bg-cover bg-no-repeat overflow-hidden relative rounded shadow-[0px_0px_8px_0px_rgba(0,0,0,0.08)] cursor-pointer transition-all duration-200 ${
                       selectedFrame?.id === template.id
                         ? 'ring-4 ring-blue-500 scale-105'
                         : 'hover:scale-102'

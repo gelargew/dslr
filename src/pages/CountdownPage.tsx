@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePhoto } from "@/hooks/usePhoto";
+import { useConfigStore } from "@/stores";
 import { Camera } from "lucide-react";
 
 // TypeScript declarations for the DigiCamControl API
@@ -25,6 +26,7 @@ declare global {
       readLocalFile: (filePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
       fileExists: (filePath: string) => Promise<{ success: boolean; exists: boolean; error?: string }>;
       getPhotoPath: (filename: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+      getPhotoPathCustom: (filename: string, directory: string) => Promise<{ success: boolean; path?: string; error?: string }>;
     };
   }
 }
@@ -32,6 +34,7 @@ declare global {
 export default function CountdownPage() {
   const navigate = useNavigate();
   const { setCurrentPhoto, countdownDuration } = usePhoto();
+  const photoDirectory = useConfigStore((state) => state.digicam.photoDirectory);
   const [countdown, setCountdown] = useState(countdownDuration);
   const [isCapturing, setIsCapturing] = useState(false);
   const [dccConnected, setDccConnected] = useState(false);
@@ -342,48 +345,59 @@ export default function CountdownPage() {
   };
 
   return (
-    <div className="relative h-screen w-full bg-black overflow-hidden">
-      {/* DigiCamControl Live View Background */}
-      {dccConnected ? (
-        <img
-          src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
-          alt="Live View"
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            // If live view fails, show a placeholder
-            target.style.display = 'none';
-          }}
-        />
-      ) : (
-        <div className="absolute inset-0 w-full h-full bg-gray-900 flex items-center justify-center">
-          <div className="text-center text-white">
-            <Camera size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg">Waiting for DigiCamControl...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Countdown Circle Overlay - Only show when countdown > 0 */}
-      {countdown > 0 && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-48 h-48 bg-[#585d68] opacity-80 rounded-full flex items-center justify-center shadow-2xl">
-            <div className={`text-8xl font-bold ${getCountdownColor()} transition-all duration-300 animate-pulse`}>
-              {getCountdownText()}
+    <div className="relative h-screen w-full bg-black overflow-hidden flex flex-col items-center justify-between p-8 pt-2">
+      {/* DigiCamControl Live View - Same Square Container as CameraPage */}
+      <div className="flex-1 flex items-center justify-center max-w-4xl w-full">
+        <div className="relative w-full aspect-square max-w-2xl">
+          {dccConnected ? (
+            <img
+              src={`${window.dccConfig.liveViewUrl}${shouldRefreshLiveView ? `?t=${liveViewKey}` : ''}`}
+              alt="Live View"
+              className="absolute inset-0 w-full h-full object-cover rounded-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                // If live view fails, show a placeholder
+                target.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="absolute inset-0 w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
+              <div className="text-center text-white">
+                <Camera size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Waiting for DigiCamControl...</p>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Capture Status Overlay - Show when countdown is 0 and capturing */}
-      {countdown === 0 && captureStatus && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <div className="text-center text-white">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
-            <p className="text-lg">{captureStatus}</p>
-          </div>
+          {/* Countdown Circle Overlay - Only show when countdown > 0 */}
+          {countdown > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-48 h-48 bg-[#585d68] opacity-80 rounded-full flex items-center justify-center shadow-2xl">
+                <div className={`text-8xl font-bold ${getCountdownColor()} transition-all duration-300 animate-pulse`}>
+                  {getCountdownText()}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Capture Status Overlay - Show when countdown is 0 and capturing */}
+          {countdown === 0 && captureStatus && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
+                <p className="text-lg">{captureStatus}</p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Empty space where buttons would be (maintains layout consistency) */}
+      <div className="flex items-center gap-8 mt-2">
+        {/* Placeholder space to maintain consistent layout */}
+        <div className="w-16 h-16" />
+        <div className="px-16 py-4" />
+      </div>
     </div>
   );
 }

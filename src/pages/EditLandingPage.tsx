@@ -99,7 +99,7 @@ export default function EditLandingPage() {
 
           <p className="text-xl text-gray-600 mb-12 leading-relaxed">
             Continue the fun by editing and customizing your<br />
-            photo at the tablet station outside the booth!
+            photo at the next steps!
           </p>
 
           {/* Countdown Circle */}

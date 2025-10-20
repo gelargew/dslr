@@ -175,8 +175,13 @@ export const usePhoto = () => {
         iconData = JSON.stringify(formattedIcons);
       }
 
-      // Upload via HTTP API with photoDraftId and frame URL
-      const result = await window.httpAPI.uploadPhoto(file, appId, frameUrl, iconData, photoDraftId);
+      // Get the text from editData and ensure it's a string
+      const text = editData.text || editData.frameText || '';
+
+      console.log('📝 Text being sent to backend:', text);
+
+      // Upload via HTTP API with photoDraftId, frame URL, and text
+      const result = await window.httpAPI.uploadPhoto(file, appId, frameUrl, iconData, photoDraftId, text);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to upload final photo');

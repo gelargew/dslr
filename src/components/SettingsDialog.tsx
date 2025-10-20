@@ -12,15 +12,18 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   // Read config from Zustand store
   const debuggerEnabled = useConfigStore((state) => state.debugger.enabled);
   const digicamBaseUrl = useConfigStore((state) => state.digicam.baseUrl);
+  const digicamPhotoDirectory = useConfigStore((state) => state.digicam.photoDirectory);
   const appId = useConfigStore((state) => state.app.id);
 
   // Zustand actions
   const setDebuggerEnabled = useConfigStore((state) => state.setDebuggerEnabled);
   const setDigicamBaseUrl = useConfigStore((state) => state.setDigicamBaseUrl);
+  const setDigicamPhotoDirectory = useConfigStore((state) => state.setDigicamPhotoDirectory);
   const setAppId = useConfigStore((state) => state.setAppId);
 
   const [tempDebuggerEnabled, setTempDebuggerEnabled] = useState(debuggerEnabled);
   const [tempDigicamUrl, setTempDigicamUrl] = useState(digicamBaseUrl);
+  const [tempDigicamPhotoDirectory, setTempDigicamPhotoDirectory] = useState(digicamPhotoDirectory);
   const [tempAppId, setTempAppId] = useState(appId);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -29,8 +32,9 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   useEffect(() => {
     setTempDebuggerEnabled(debuggerEnabled);
     setTempDigicamUrl(digicamBaseUrl);
+    setTempDigicamPhotoDirectory(digicamPhotoDirectory);
     setTempAppId(appId);
-  }, [debuggerEnabled, digicamBaseUrl, appId]);
+  }, [debuggerEnabled, digicamBaseUrl, digicamPhotoDirectory, appId]);
 
   const handleDebuggerToggle = (enabled: boolean) => {
     setTempDebuggerEnabled(enabled);
@@ -39,6 +43,11 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
 
   const handleUrlChange = (url: string) => {
     setTempDigicamUrl(url);
+    setTestResult(null); // Clear previous test results
+  };
+
+  const handlePhotoDirectoryChange = (directory: string) => {
+    setTempDigicamPhotoDirectory(directory);
     setTestResult(null); // Clear previous test results
   };
 
@@ -112,6 +121,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
       console.log('💾 SettingsDialog: Saving configuration...', {
         debuggerEnabled: tempDebuggerEnabled,
         digicamUrl: tempDigicamUrl,
+        digicamPhotoDirectory: tempDigicamPhotoDirectory,
         appId: tempAppId
       });
 
@@ -121,6 +131,9 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
 
       setDigicamBaseUrl(tempDigicamUrl);
       console.log('💾 SettingsDialog: DigiCamControl URL saved');
+
+      setDigicamPhotoDirectory(tempDigicamPhotoDirectory.trim());
+      console.log('💾 SettingsDialog: Photo directory saved');
 
       setAppId(tempAppId.trim());
       console.log('💾 SettingsDialog: App ID saved');
@@ -138,6 +151,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   const handleReset = () => {
     setTempDebuggerEnabled(true);
     setTempDigicamUrl('http://127.0.0.1:5513');
+    setTempDigicamPhotoDirectory('C:/Users/Public/Pictures/DigiCamControl');
     setTempAppId('');
     setTestResult(null);
   };
@@ -145,6 +159,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   const handleCancel = () => {
     setTempDebuggerEnabled(debuggerEnabled);
     setTempDigicamUrl(digicamBaseUrl);
+    setTempDigicamPhotoDirectory(digicamPhotoDirectory);
     setTempAppId(appId);
     setTestResult(null);
     onClose();
@@ -233,6 +248,24 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
             />
             <p className="text-sm text-gray-600">
               URL for DigiCamControl web server (usually http://127.0.0.1:5513)
+            </p>
+          </div>
+
+          {/* Photo Directory */}
+          <div className="space-y-2">
+            <label htmlFor="photo-directory" className="block text-lg font-medium">
+              📁 Photo Watch Directory
+            </label>
+            <input
+              id="photo-directory"
+              type="text"
+              value={tempDigicamPhotoDirectory}
+              onChange={(e) => handlePhotoDirectoryChange(e.target.value)}
+              placeholder="C:/Users/Public/Pictures/DigiCamControl"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-600">
+              Directory where DigiCamControl saves captured photos (full path)
             </p>
           </div>
 

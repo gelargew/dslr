@@ -499,23 +499,7 @@ export default function EditOverlayPage() {
           <div className="font-['Public_Sans'] font-medium leading-[30px] text-[#888b93] text-[24px] text-center">
             Choose stickers and decorations for your photo
           </div>
-          <div className="font-['Public_Sans'] font-medium leading-[20px] text-[#6b7280] text-[14px] text-center">
-            💡 Tip: Click and drag icons on your photo to reposition them
-          </div>
 
-          {/* Selected Icon Status */}
-          {selectedIconId && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="font-['Public_Sans'] font-medium leading-[18px] text-[#1e40af] text-[12px]">
-                {(() => {
-                  const selectedOverlay = editState.overlays.find(o => o.id === selectedIconId);
-                  const selectedIcon = icons.find(i => i.id === selectedOverlay?.iconId);
-                  return selectedIcon ? `Selected: ${selectedIcon.name}` : 'Icon selected';
-                })()}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Content - Scrollable */}
@@ -548,12 +532,12 @@ export default function EditOverlayPage() {
                 <div className="font-['Space_Grotesk'] font-medium leading-[32px] text-[#70747d] text-[28px] tracking-[-0.56px]">
                   {category}
                 </div>
-                <div className="flex flex-wrap gap-8">
+                <div className="flex flex-wrap w-fit mx-auto gap-8">
                   {iconsByCategory[category].map((icon) => (
                     <button
                       key={icon.id}
                       onClick={() => handleIconClick(icon.id)}
-                      className={`flex flex-col gap-3 items-center px-8 py-4 border rounded-xl w-80 transition-all duration-200 ${
+                      className={`flex flex-col gap-3 items-center px-8 py-4 border rounded-xl w-60 transition-all duration-200 ${
                         selectedIcons.includes(icon.id)
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-[#888b93] hover:border-blue-300'
@@ -579,30 +563,30 @@ export default function EditOverlayPage() {
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-[42px] items-center w-full">
+        <div className="flex gap-8 items-center w-full">
           <button
             onClick={handleBack}
-            className="flex-1 bg-[#585d68] opacity-70 hover:opacity-90 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+            className="flex-1 bg-[#585d68] opacity-70 hover:opacity-90 flex items-center justify-center px-4 py-3 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
-            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[22px] text-center">
               Back
             </div>
           </button>
           <button
             onClick={handlePrintAndFinish}
             disabled={isPrinting || isSaving}
-            className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+            className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center justify-center px-4 py-3 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
-            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[22px] text-center">
               {isPrinting ? 'Printing...' : 'Print'}
             </div>
           </button>
           <button
             onClick={handleFinish}
             disabled={isSaving || isPrinting}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center px-8 py-6 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center px-4 py-3 rounded-xl shadow-[32px_32px_64px_0px_inset_rgba(255,255,255,0.24)] transition-all duration-200"
           >
-            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[28px] text-center">
+            <div className="font-['Public_Sans'] font-semibold leading-[32px] text-[#fefcfc] text-[22px] text-center">
               {isSaving ? 'Saving...' : 'Finish'}
             </div>
           </button>
